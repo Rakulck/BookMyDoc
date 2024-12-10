@@ -1,0 +1,97 @@
+#profile .profile-form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+#profile .form-group {
+  margin-bottom: 15px;
+}
+
+#profile .form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+#profile .form-group .form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+#profile .form-group textarea.form-control {
+  height: 100px;
+  resize: vertical;
+}
+
+#profile .tags-input-wrapper {
+  position: relative;
+}
+
+#profile .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+#profile .tag {
+  background-color: #007bff;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+#profile .remove-tag {
+  margin-left: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#profile .tagsInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#profile .divided {
+  display: flex;
+  justify-content: space-between;
+}
+
+#profile .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#profile .btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+#profile .btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+#profile .cancel {
+  background-color: red;
+  width: 48%;
+}
+
+#profile .save {
+  background-color: #007bff;
+  width: 48%;
+}

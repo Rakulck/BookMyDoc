@@ -1,0 +1,80 @@
+/* Availability.css */
+
+#availability .day-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#availability .day-container .day-switch {
+  flex: 1/2;
+}
+
+#availability .day-switch {
+  width: 30px;
+  flex: 0 0 80px; /* Adjust the width as needed */
+}
+
+#availability .time-slots-container {
+  flex: 1;
+}
+
+#availability .dropdown-scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+
+#availability .time-slots-container {
+  flex: 2;
+  margin-left: 1rem;
+}
+
+#availability .time-slots-container .input-group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+#availability .time-slots-container .input-group .form-control {
+  width: auto;
+  flex: 1;
+}
+
+#availability .time-slots-container .input-group .btn,
+.time-slots-container .input-group .dropdown-toggle {
+  margin-left: 0.5rem;
+}
+
+#availability .dropdown-scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#availability .container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#availability .card {
+  width: 100%;
+  max-width: 800px;
+  padding: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#availability .d-flex.justify-content-between {
+  margin-bottom: 1rem;
+}
+
+
+#availability > .small-switch {
+  transform: scale(0.7); 
+}
+
+#availability > .custom-switch .form-check-input {
+  display: block;
+  margin: 0 10px;
+  min-width: 40px;
+}

@@ -1,0 +1,67 @@
+/* Bookings.css */
+
+/* Ensure full width for Container */
+#booking .container-fluid {
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure full width for Card */
+#booking .card {
+  width: 100%!important;
+  align-content: center;
+  justify-content: center;
+  margin-left: 0px!important;
+}
+
+#booking .book{
+  display: grid;
+  justify-content: center;
+}
+
+/* Set text color for navigation links */
+#booking .nav-link {
+  color: black !important;
+}
+
+/* Set text color for card title and text */
+#booking .card-title, #booking .card-text {
+  color: black;
+}
+
+/* Customize active tab link */
+#booking .nav-tabs .nav-link.active {
+  color: black !important;
+  background-color: #e9ecef !important;
+}
+
+/* Customize card body */
+#booking .card-body {
+  background-color: #f8f9fa;
+}
+
+
+#booking > .card-text {
+  color: 'black';
+}
+/* Set text color for the navigation links */
+#booking .nav-link {
+  color: #000 !important; /* Set the text color to black */
+}
+
+/* Set text color for the card title and text */
+#booking .card-title, .card-text {
+  color: #000; /* Set the text color to black */
+}
+
+/* Customize the active tab link */
+#booking .nav-tabs .nav-link.active {
+  color: #000 !important; /* Set the text color to black for active tab */
+  background-color: #e9ecef !important; /* Set a background color to distinguish the active tab */
+}
+
+/* Customize the card body */
+#booking .card-body {
+  background-color: #f8f9fa; /* Set a light background color for the card */
+}

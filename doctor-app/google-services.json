@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "982069634557",
+    "project_id": "doctor-appointment-c7a6c",
+    "storage_bucket": "doctor-appointment-c7a6c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982069634557:android:07070ac35ca2bdb9352594",
+        "android_client_info": {
+          "package_name": "com.app.BookMyDoctorAppointment"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "982069634557-dlm7v0k1jm61jvdhclr403v1rs9k0900.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.BookMyDoctorAppointment",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "982069634557-7mkv77adh0vit2gl9qi9mg1kqk8bl42u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACxey86ajmF0XehL1sXz-JhkBOqhUszGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "982069634557-7mkv77adh0vit2gl9qi9mg1kqk8bl42u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "982069634557-4o8l4b9jiolmgik450siaulcki8rp35q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.doctor.appointment.009911"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
