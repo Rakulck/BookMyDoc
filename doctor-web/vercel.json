@@ -9,9 +9,6 @@
       }
     }
   ],
-  "build": {
-    "command": "npm run app:build"
-  },
   "routes": [
     {
       "src": "/(.*)",
