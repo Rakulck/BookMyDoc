@@ -72,7 +72,6 @@ const Verify = () => {
     }
   };
 
-  /* eslint-disable-next-line react-hooks/exhaustive-deps */
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
@@ -92,6 +91,7 @@ const Verify = () => {
     if (!isAuthenticated && !error && stateCode) {
       fetchData();
     }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [stateCode, error]);
 
   // FRONTEND FORM VALIDATION..
