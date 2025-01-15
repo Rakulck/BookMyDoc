@@ -1,5 +1,5 @@
 import { unwrapResult } from '@reduxjs/toolkit';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { sendVerifyEmail, verifyEmail } from '../store/slices/auth.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
@@ -35,7 +35,7 @@ const Verify = () => {
     valid: true,
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const response = unwrapResult(await dispatch(verifyEmail(stateCode)));
       if (response?.data?.statusCode !== 200) {
@@ -70,7 +70,7 @@ const Verify = () => {
         setMessage('');
       }, 2000);
     }
-  };
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
