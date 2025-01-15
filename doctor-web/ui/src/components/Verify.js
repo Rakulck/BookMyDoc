@@ -35,7 +35,7 @@ const Verify = () => {
     valid: true,
   });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const response = unwrapResult(await dispatch(verifyEmail(stateCode)));
       if (response?.data?.statusCode !== 200) {
@@ -70,8 +70,9 @@ const Verify = () => {
         setMessage('');
       }, 2000);
     }
-  }, []);
+  };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
@@ -91,7 +92,7 @@ const Verify = () => {
     if (!isAuthenticated && !error && stateCode) {
       fetchData();
     }
-  }, [stateCode, error, fetchData, isAuthenticated, loading, navigate, providerLoading]);
+  }, [stateCode, error]);
 
   // FRONTEND FORM VALIDATION..
   const handleValidation = () => {
