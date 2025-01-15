@@ -25,6 +25,7 @@ module.exports = {
     'react-refresh/only-export-components': 'error',
     'unicorn/no-null': 'off',
     'unicorn/no-process-exit': 'off',
+    'react-hooks/exhaustive-deps': 'off',
     '@typescript-eslint/naming-convention': [
       'error',
       {
