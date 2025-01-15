@@ -91,7 +91,7 @@ const Verify = () => {
     if (!isAuthenticated && !error && stateCode) {
       fetchData();
     }
-  }, [stateCode, error]);
+  }, [stateCode, error, fetchData, isAuthenticated, loading, navigate]);
 
   // FRONTEND FORM VALIDATION..
   const handleValidation = () => {
