@@ -70,7 +70,7 @@ const Availability = () => {
       const results = prepareAvailabilitySlots(data);
       setAvailability({ ...availability, ...results });
     }
-  }, [data]);
+  }, [data, availability, isError]);
 
   const handleToggle = (dayKey) => {
     console.log(dayKey);
