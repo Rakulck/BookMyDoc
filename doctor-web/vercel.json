@@ -1,11 +1,10 @@
 {
   "version": 2,
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
-  "outputDirectory": "./dist",
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "./dist/main.js",
+      "dest": "./src/main.ts",
       "methods": [
         "GET",
         "POST",
