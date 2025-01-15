@@ -55,7 +55,7 @@ const Reschedule = ({ booking }) => {
         slot_id: null,
       });
     }
-  }, [data]);
+  }, [data, booking?.slot?.slot_id, formData]);
 
   const handleChange = (field, event) => {
     let data = { ...formData };
