@@ -1,5 +1,5 @@
 import { unwrapResult } from '@reduxjs/toolkit';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { sendVerifyEmail, verifyEmail } from '../store/slices/auth.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
