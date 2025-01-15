@@ -70,7 +70,7 @@ const Verify = () => {
         setMessage('');
       }, 2000);
     }
-  });
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
