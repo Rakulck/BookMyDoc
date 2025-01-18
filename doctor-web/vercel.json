@@ -1,16 +1,25 @@
 {
   "version": 2,
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "builds": [
     {
-      "src": "dist/main.js",
+      "src": "./dist/main.js",
       "use": "@vercel/node"
     }
   ],
+  "outputDirectory": "./dist",
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/main.js",
-      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+      "dest": "./dist/main.js",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "OPTIONS"
+      ]
     }
   ]
 }
