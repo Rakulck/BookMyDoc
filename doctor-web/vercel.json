@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "npm install && cd ui && npm install && cd ../",
+  "installCommand": "npm install && cd ui && npm install && cd ../ && npm run build:ui && npm run build",
   "outputDirectory": "dist",
   "builds": [
     {
