@@ -4,6 +4,8 @@ import { AppModule } from '@app/app.module';
 import { VersioningType, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   dotenv.config();
@@ -20,7 +22,7 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
     allowedHeaders: 'Content-Type, Authorization',
   });
-  app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api/docs/(.*)'] });
+  app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
   app.enableVersioning({
     type: VersioningType.URI,
     prefix: 'v',
@@ -61,7 +63,7 @@ async function bootstrap() {
     extraModels: [],
   });
 
-  SwaggerModule.setup('/api/docs', app, document, {
+  SwaggerModule.setup('/api-docs', app, document, {
     customCss:
       '.topbar-wrapper a svg { visibility: hidden; }' +
       '.swagger-ui .topbar { display: none; }',
@@ -69,6 +71,11 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   });
+
+  app.use(
+    '/api-docs',
+    express.static(join(__dirname, '..', 'node_modules', 'swagger-ui-dist')),
+  );
 
   const config = app.get(ConfigService);
   await app.listen(

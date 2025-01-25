@@ -16,7 +16,7 @@ let UiService = class UiService {
             {
                 rootPath: (0, node_path_1.join)(__dirname, '..', 'ui', 'build'),
                 renderPath: /^((?!^\/(api|_health)).)*$/s,
-                exclude: ['/api*', '/health*', '/api/docs*'],
+                exclude: ['/api*', '/health*', '/api-docs*'],
                 serveStaticOptions: {
                     cacheControl: true,
                     maxAge: '1year',

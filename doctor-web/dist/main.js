@@ -29,6 +29,8 @@ const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const dotenv = __importStar(require("dotenv"));
+const express = __importStar(require("express"));
+const path_1 = require("path");
 async function bootstrap() {
     dotenv.config();
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
@@ -41,7 +43,7 @@ async function bootstrap() {
         optionsSuccessStatus: 204,
         allowedHeaders: 'Content-Type, Authorization',
     });
-    app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api/docs/(.*)'] });
+    app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
     app.enableVersioning({
         type: common_1.VersioningType.URI,
         prefix: 'v',
@@ -73,13 +75,14 @@ async function bootstrap() {
     const document = swagger_1.SwaggerModule.createDocument(app, swaggerConfig, {
         extraModels: [],
     });
-    swagger_1.SwaggerModule.setup('/api/docs', app, document, {
+    swagger_1.SwaggerModule.setup('/api-docs', app, document, {
         customCss: '.topbar-wrapper a svg { visibility: hidden; }' +
             '.swagger-ui .topbar { display: none; }',
         swaggerOptions: {
             persistAuthorization: true,
         },
     });
+    app.use('/api-docs', express.static((0, path_1.join)(__dirname, '..', 'node_modules', 'swagger-ui-dist')));
     const config = app.get(config_1.ConfigService);
     await app.listen(config.getOrThrow('PORT'), config.getOrThrow('HOSTNAME'), () => {
         console.log(`service listening on : ${config.getOrThrow('HOSTNAME')}:${config.getOrThrow('PORT')}}`);
