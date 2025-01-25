@@ -9,11 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UiService = void 0;
 const common_1 = require("@nestjs/common");
 const node_path_1 = require("node:path");
+console.log((0, node_path_1.join)(__dirname, '..', 'ui', 'build'));
 let UiService = class UiService {
     createLoggerOptions() {
         return [
             {
-                rootPath: (0, node_path_1.join)(process.cwd(), 'ui/build'),
+                rootPath: (0, node_path_1.join)(__dirname, '..', 'ui', 'build'),
                 renderPath: /^((?!^\/(api|_health)).)*$/s,
                 exclude: ['/api*', '/health*', '/api/docs*'],
                 serveStaticOptions: {
