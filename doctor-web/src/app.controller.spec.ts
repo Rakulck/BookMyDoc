@@ -15,10 +15,9 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Welcome to doctor appointment API!"', () => {
-      expect(appController.getWelcome()).toBe(
-        'Welcome to doctor appointment API!',
-      );
+    it('should return facts', async () => {
+      const result = await appController.getFacts({});
+      expect(result).toBeDefined();
     });
   });
 });
