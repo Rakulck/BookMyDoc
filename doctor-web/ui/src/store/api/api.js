@@ -3,7 +3,7 @@ import axios from 'axios';
 const { NODE_ENV } = process.env;
 
 export const API_BASE_URL =
-  NODE_ENV === 'development' && 'http://localhost:3000/';
+  NODE_ENV === 'development' ? 'http://localhost:8080/' : process.env.REACT_APP_API_URL || 'http://localhost:8080/';
 
 // export const API_BASE_PREFIX = '/elevenlabs/v1';
 const DEFAULT_TIMEOUT = 30_000;

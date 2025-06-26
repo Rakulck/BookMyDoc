@@ -3,6 +3,12 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
+/**
+ * Roles Guard
+ * @description This guard is used to check if the user has the required role to access the resource
+ * @param reflector
+ * @returns
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}

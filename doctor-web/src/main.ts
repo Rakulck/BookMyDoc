@@ -15,12 +15,22 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    // origin: ['http://localhost:3000', 'http://localhost:3001'],
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     preflightContinue: false,
     optionsSuccessStatus: 204,
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+    credentials: true,
   });
   app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
   app.enableVersioning({

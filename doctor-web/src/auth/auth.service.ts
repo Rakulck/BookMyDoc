@@ -22,39 +22,74 @@ export class AuthService {
     token: string,
     type: 'google' | 'apple' | false,
   ) {
-    const providerUser = await this.firebaseService
-      .getAuth()
-      .verifyIdToken(token);
+    console.log('🔐 [AUTH SERVICE] Starting token verification:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      type,
+    });
 
-    if (!providerUser) {
-      return {
-        statusCode: HttpStatus.UNAUTHORIZED,
-        message: 'Invalid token',
-        data: null,
-        error: {
-          code: HttpStatus.UNAUTHORIZED,
-          message: 'Invalid token',
-        },
-      };
-    }
+    try {
+      const providerUser = await this.firebaseService
+        .getAuth()
+        .verifyIdToken(token);
 
-    if (type === 'google') {
-      return {
-        uid: providerUser.uid || providerUser.user_id,
+      console.log('✅ [AUTH SERVICE] Token verified successfully:', {
+        uid: providerUser.uid,
         email: providerUser.email,
-        displayName: providerUser.name || '',
-        photoURL: providerUser.picture || '',
         emailVerified: providerUser.email_verified,
-        role: providerUser?.role || '',
-      };
-    }
+        name: providerUser.name,
+      });
 
-    if (type === 'apple') {
-      console.log('APPLE PROVIDER TOKEN USER - ', providerUser);
+      if (!providerUser) {
+        console.log(
+          '❌ [AUTH SERVICE] No provider user returned from token verification',
+        );
+        return {
+          statusCode: HttpStatus.UNAUTHORIZED,
+          message: 'Invalid token',
+          data: null,
+          error: {
+            code: HttpStatus.UNAUTHORIZED,
+            message: 'Invalid token',
+          },
+        };
+      }
+
+      if (type === 'google') {
+        console.log('🔍 [AUTH SERVICE] Processing Google provider user data');
+        const googleUser = {
+          uid: providerUser.uid || providerUser.user_id,
+          email: providerUser.email,
+          displayName: providerUser.name || '',
+          photoURL: providerUser.picture || '',
+          emailVerified: providerUser.email_verified,
+          role: providerUser?.role || '',
+        };
+        console.log(
+          '✅ [AUTH SERVICE] Google user object created:',
+          googleUser,
+        );
+        return googleUser;
+      }
+
+      if (type === 'apple') {
+        console.log('🍎 [AUTH SERVICE] Processing Apple provider user data');
+        return providerUser;
+      }
+
+      // For regular email/password login (type === false)
+      console.log(
+        '📧 [AUTH SERVICE] Processing email/password login user data',
+      );
       return providerUser;
+    } catch (error) {
+      console.log('💥 [AUTH SERVICE] Token verification failed:', {
+        error: (error as Error)?.message,
+        code: (error as any)?.code,
+        type,
+      });
+      throw error;
     }
-
-    return providerUser;
   }
 
   /**
@@ -236,11 +271,12 @@ export class AuthService {
           case 'auth/email-already-exists':
             return {
               statusCode: HttpStatus.CONFLICT,
-              message: 'Email already exists',
+              message: 'Email already registered',
               data: null,
               error: {
                 code: HttpStatus.CONFLICT,
-                message: 'Email already exists',
+                message:
+                  'This email address is already registered. Please try logging in instead or use a different email address.',
               },
             };
           case 'auth/weak-password':
@@ -250,7 +286,8 @@ export class AuthService {
               data: null,
               error: {
                 code: HttpStatus.BAD_REQUEST,
-                message: 'Password is too weak',
+                message:
+                  'Password is too weak. Please choose a password with at least 6 characters.',
               },
             };
           default:
@@ -288,13 +325,23 @@ export class AuthService {
     role = 'customer',
     provider = false,
   }: LoginDto): Promise<IApiResponse<IUnsafeObject>> {
+    console.log('🚀 [AUTH SERVICE] Login attempt started');
+    console.log('📋 [AUTH SERVICE] Login payload:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      role,
+      provider,
+    });
+
     try {
       let userRecord: any;
 
       // Role checked..
       const validRole = this.roleChecker(role);
+      console.log('✅ [AUTH SERVICE] Role validation:', { role, validRole });
 
       if (validRole === false) {
+        console.log('❌ [AUTH SERVICE] Invalid role detected:', role);
         return {
           statusCode: HttpStatus.UNAUTHORIZED,
           message: 'Invalid Role',
@@ -307,23 +354,48 @@ export class AuthService {
       }
 
       if (token && provider) {
+        console.log('🔐 [AUTH SERVICE] Provider authentication flow started');
+        console.log('🔍 [AUTH SERVICE] Verifying provider token...');
+
         userRecord = await this.verifyProviderToken(token, provider);
+        console.log('✅ [AUTH SERVICE] Provider token verified:', {
+          uid: userRecord.uid,
+          email: userRecord.email,
+          displayName: userRecord.displayName,
+        });
 
         // Check if user exists..
+        console.log(
+          '👤 [AUTH SERVICE] Checking if user exists in Firebase Auth...',
+        );
         const authUser = await this.firebaseService
           .getAuth()
           .getUser(userRecord.uid);
+        console.log('✅ [AUTH SERVICE] Firebase Auth user found:', {
+          uid: authUser.uid,
+          email: authUser.email,
+        });
 
         // Check from DB also.. for existing user
+        console.log(
+          '🗄️ [AUTH SERVICE] Checking if user profile exists in Firestore...',
+        );
         const dbUser = await this.firebaseService
           .getFirestore()
           .collection('profiles')
           .doc(userRecord.uid)
           .get();
+        console.log('📊 [AUTH SERVICE] Firestore profile check:', {
+          exists: dbUser.exists,
+          uid: userRecord.uid,
+        });
 
         if (authUser && dbUser.exists === false) {
+          console.log(
+            '📝 [AUTH SERVICE] User not found in Firestore, auto-registering...',
+          );
           // Automatically register user if they don't exist..
-          await this.register({
+          const registerResult = await this.register({
             name: userRecord.displayName,
             email: userRecord.email,
             password: '',
@@ -331,40 +403,65 @@ export class AuthService {
             role: role,
             provider: provider,
           });
+          console.log('✅ [AUTH SERVICE] Auto-registration result:', {
+            statusCode: registerResult.statusCode,
+            message: registerResult.message,
+          });
         }
 
         // Re-fetch the user record after registration..
+        console.log(
+          '🔄 [AUTH SERVICE] Re-fetching user record after registration...',
+        );
         userRecord = await this.firebaseService
           .getAuth()
           .getUser(userRecord.uid);
+        console.log('✅ [AUTH SERVICE] User record re-fetched successfully');
       } else {
         // The client should handle login with email/password..
         // We can also verify our user with token which is provided from client..
         // const user = await this.firebaseService.getAuth().getUserByEmail(email);
         const decodedToken = await this.verifyProviderToken(token, false);
-        const user = await this.firebaseService
-          .getAuth()
-          .getUser(decodedToken.uid);
+        if (typeof decodedToken === 'object' && 'uid' in decodedToken) {
+          const user = await this.firebaseService
+            .getAuth()
+            .getUser(decodedToken.uid);
 
-        if (!user) {
+          if (!user) {
+            return {
+              statusCode: HttpStatus.UNAUTHORIZED,
+              message: 'Invalid credentials',
+              data: null,
+              error: {
+                code: HttpStatus.UNAUTHORIZED,
+                message: 'Invalid credentials',
+              },
+            };
+          }
+
+          userRecord = user;
+        } else {
           return {
             statusCode: HttpStatus.UNAUTHORIZED,
-            message: 'Invalid credentials',
+            message: 'Invalid token',
             data: null,
             error: {
               code: HttpStatus.UNAUTHORIZED,
-              message: 'Invalid credentials',
+              message: 'Invalid token',
             },
           };
         }
-
-        userRecord = user;
       }
 
       // Generate a new id token..
+      console.log('🎫 [AUTH SERVICE] Generating custom token for user...');
       const idToken = await this.generateToken(userRecord.uid, role);
+      console.log('✅ [AUTH SERVICE] Custom token generated successfully');
 
       // verify role
+      console.log(
+        '🔍 [AUTH SERVICE] Fetching user profile for role verification...',
+      );
       const userProfile = (
         await this.firebaseService
           .getFireStore()
@@ -373,18 +470,39 @@ export class AuthService {
           .get()
       ).data();
 
+      console.log('📋 [AUTH SERVICE] User profile data:', {
+        profileExists: !!userProfile,
+        profileRole: userProfile?.role,
+        requestedRole: role,
+        email: userProfile?.email,
+      });
+
       if (userProfile?.role !== role) {
+        console.log('❌ [AUTH SERVICE] Role mismatch detected:', {
+          profileRole: userProfile?.role,
+          requestedRole: role,
+        });
+
+        const errorMessage = `This email is already registered as a ${userProfile?.role}. Please login using the ${userProfile?.role} portal or contact support to change your role.`;
+
         return {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Invalid Role Credentials',
-          data: null,
+          statusCode: HttpStatus.CONFLICT,
+          message: errorMessage,
+          data: {
+            existingRole: userProfile?.role,
+            requestedRole: role,
+            email: userProfile?.email,
+            suggestion: `Try logging in as a ${userProfile?.role} instead`,
+          },
           error: {
-            code: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: 'Invalid Role Credentials',
+            code: HttpStatus.CONFLICT,
+            message: errorMessage,
+            extra: { type: 'ROLE_MISMATCH' },
           },
         };
       }
 
+      console.log('🎉 [AUTH SERVICE] Login successful! Returning user data...');
       return {
         message: 'User logged in successfully',
         statusCode: HttpStatus.OK,
@@ -397,9 +515,18 @@ export class AuthService {
         },
       };
     } catch (error) {
+      console.log('💥 [AUTH SERVICE] Login error caught:', error);
+      console.log('🔍 [AUTH SERVICE] Error details:', {
+        message: (error as Error)?.message,
+        code: (error as any)?.code,
+        name: (error as Error)?.name,
+        stack: (error as Error)?.stack?.substring(0, 200),
+      });
+
       const firebaseError = error as FirebaseAuthError;
 
       if (firebaseError.code === 'auth/user-not-found') {
+        console.log('❌ [AUTH SERVICE] User not found error');
         return {
           statusCode: HttpStatus.UNAUTHORIZED,
           message: 'Invalid credentials',
@@ -411,6 +538,7 @@ export class AuthService {
         };
       }
 
+      console.log('❌ [AUTH SERVICE] Unexpected error occurred');
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'An unexpected error occurred',
