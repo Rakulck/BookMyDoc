@@ -39,17 +39,21 @@ const Login = () => {
   useEffect(() => {
     if (!isAuthenticated && !loading && error?.message) {
       // Handle role mismatch error specifically
-      if (error?.error?.message?.includes('Account Already Exists with Different Role')) {
+      if (
+        error?.error?.message?.includes(
+          'Account Already Exists with Different Role',
+        )
+      ) {
         ToastErrorMessage({
           title: '⚠️ Account Role Mismatch',
           message: `${error.message}. ${error.suggestion || 'Please contact support to change your role.'}`,
-          duration: 6000
+          duration: 6000,
         });
       } else {
-      ToastErrorMessage({
-        title: error?.message,
-        message: error?.error?.message,
-      });
+        ToastErrorMessage({
+          title: error?.message,
+          message: error?.error?.message,
+        });
       }
     }
 

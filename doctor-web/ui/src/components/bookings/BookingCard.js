@@ -93,7 +93,7 @@ const BookingCard = ({ booking }) => {
           <>
             <Button
               variant="primary"
-              className={isDatePassed ? `ms-2 mb-2`: 'ms-2'}
+              className={isDatePassed ? `ms-2 mb-2` : 'ms-2'}
               size="sm"
               onClick={() =>
                 setConfirmModal({
@@ -115,30 +115,32 @@ const BookingCard = ({ booking }) => {
                 Reschedule
               </Loading>
             </Button>
-            {isDatePassed && <Button
-              variant="primary"
-              className="ms-2 mb-2"
-              size="sm"
-              onClick={() =>
-                setConfirmModal({
-                  open: true,
-                  title: 'Completed Booking',
-                  confirmButton: 'Yes, Completed',
-                  children: 'Are you sure want to completed this booking?',
-                  onConfirm: () => handleBooking('completed'),
-                  action: 'completed',
-                })
-              }
-            >
-              <Loading
-                loading={
-                  updateBookingResult?.isLoading &&
-                  confirmModal?.action === 'completed'
+            {isDatePassed && (
+              <Button
+                variant="primary"
+                className="ms-2 mb-2"
+                size="sm"
+                onClick={() =>
+                  setConfirmModal({
+                    open: true,
+                    title: 'Completed Booking',
+                    confirmButton: 'Yes, Completed',
+                    children: 'Are you sure want to completed this booking?',
+                    onConfirm: () => handleBooking('completed'),
+                    action: 'completed',
+                  })
                 }
               >
-                Completed
-              </Loading>
-            </Button>}
+                <Loading
+                  loading={
+                    updateBookingResult?.isLoading &&
+                    confirmModal?.action === 'completed'
+                  }
+                >
+                  Completed
+                </Loading>
+              </Button>
+            )}
           </>
         );
         break;

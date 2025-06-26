@@ -41,12 +41,13 @@ const Signup = () => {
       // Handle specific error types with clear messages
       let errorTitle = 'Registration Failed';
       let errorMessage = error?.error?.message || error?.message;
-      
+
       // Handle specific error cases
       if (error?.statusCode === 409) {
         if (errorMessage?.toLowerCase().includes('email already exists')) {
           errorTitle = '📧 Email Already Registered';
-          errorMessage = 'This email is already registered. Please try logging in instead or use a different email address.';
+          errorMessage =
+            'This email is already registered. Please try logging in instead or use a different email address.';
         } else if (errorMessage?.toLowerCase().includes('role')) {
           errorTitle = '⚠️ Account Role Mismatch';
           errorMessage = `${error.message}. ${error.suggestion || 'Please contact support to change your role.'}`;
@@ -54,23 +55,27 @@ const Signup = () => {
       } else if (error?.statusCode === 400) {
         if (errorMessage?.toLowerCase().includes('weak password')) {
           errorTitle = '🔒 Weak Password';
-          errorMessage = 'Password is too weak. Please choose a stronger password with at least 6 characters.';
+          errorMessage =
+            'Password is too weak. Please choose a stronger password with at least 6 characters.';
         } else if (errorMessage?.toLowerCase().includes('invalid role')) {
           errorTitle = '👤 Invalid Role';
-          errorMessage = 'The selected role is invalid. Please choose either Doctor or Customer.';
+          errorMessage =
+            'The selected role is invalid. Please choose either Doctor or Customer.';
         }
       } else if (error?.statusCode === 401) {
         errorTitle = '🔐 Authentication Failed';
-        errorMessage = 'Invalid credentials provided. Please check your information and try again.';
+        errorMessage =
+          'Invalid credentials provided. Please check your information and try again.';
       } else if (error?.statusCode >= 500) {
         errorTitle = '🔧 Server Error';
-        errorMessage = 'A server error occurred. Please try again later or contact support if the problem persists.';
+        errorMessage =
+          'A server error occurred. Please try again later or contact support if the problem persists.';
       }
 
       ToastErrorMessage({
         title: errorTitle,
         message: errorMessage,
-        duration: 6000
+        duration: 6000,
       });
     }
 
@@ -105,15 +110,15 @@ const Signup = () => {
       ...user,
       [field]: event.target.value,
     });
-    
+
     // Clear form validation errors when user starts typing
     if (formValidation.errors[field]) {
-      setFormValidation(prev => ({
+      setFormValidation((prev) => ({
         ...prev,
         errors: {
           ...prev.errors,
-          [field]: ''
-        }
+          [field]: '',
+        },
       }));
     }
   };
@@ -200,36 +205,50 @@ const Signup = () => {
             <div className="signup-form">
               <ToastContainer />
               <h1 className="text-center">Signup</h1>
-              
+
               {/* Global Error Message Display */}
               {error && !loading && (
                 <div className="alert alert-danger" role="alert">
                   <strong>
-                    {error?.statusCode === 409 && error?.error?.message?.toLowerCase().includes('email already exists') 
-                      ? '📧 Email Already Registered' 
-                      : error?.statusCode === 400 && error?.error?.message?.toLowerCase().includes('weak password')
-                      ? '🔒 Weak Password'
-                      : error?.statusCode === 401
-                      ? '🔐 Authentication Failed'
-                      : error?.statusCode >= 500
-                      ? '🔧 Server Error'
-                      : 'Registration Failed'
-                    }
+                    {error?.statusCode === 409 &&
+                    error?.error?.message
+                      ?.toLowerCase()
+                      .includes('email already exists')
+                      ? '📧 Email Already Registered'
+                      : error?.statusCode === 400 &&
+                          error?.error?.message
+                            ?.toLowerCase()
+                            .includes('weak password')
+                        ? '🔒 Weak Password'
+                        : error?.statusCode === 401
+                          ? '🔐 Authentication Failed'
+                          : error?.statusCode >= 500
+                            ? '🔧 Server Error'
+                            : 'Registration Failed'}
                   </strong>
                   <br />
                   <small>
-                    {error?.statusCode === 409 && error?.error?.message?.toLowerCase().includes('email already exists')
-                      ? (
-                          <>
-                            This email is already registered. 
-                            <Link to="/login" className="alert-link"> Click here to login instead</Link> or use a different email.
-                          </>
-                        )
-                      : error?.error?.message || error?.message || 'Please try again.'}
+                    {error?.statusCode === 409 &&
+                    error?.error?.message
+                      ?.toLowerCase()
+                      .includes('email already exists') ? (
+                      <>
+                        This email is already registered.
+                        <Link to="/login" className="alert-link">
+                          {' '}
+                          Click here to login instead
+                        </Link>{' '}
+                        or use a different email.
+                      </>
+                    ) : (
+                      error?.error?.message ||
+                      error?.message ||
+                      'Please try again.'
+                    )}
                   </small>
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="name">Name</label>
@@ -276,8 +295,13 @@ const Signup = () => {
                     </small>
                   )}
                   {!formValidation.errors.password && user.password && (
-                    <small className={`text-${user.password.length >= 6 ? 'success' : 'warning'}`}>
-                      Password strength: {user.password.length >= 6 ? '✅ Good' : '⚠️ Too weak (min 6 characters)'}
+                    <small
+                      className={`text-${user.password.length >= 6 ? 'success' : 'warning'}`}
+                    >
+                      Password strength:{' '}
+                      {user.password.length >= 6
+                        ? '✅ Good'
+                        : '⚠️ Too weak (min 6 characters)'}
                     </small>
                   )}
                 </div>

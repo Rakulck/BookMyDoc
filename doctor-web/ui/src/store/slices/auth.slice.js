@@ -57,9 +57,12 @@ export const authRegister = createAsyncThunk(
           statusCode: 409,
           message: response?.data?.message || 'Registration failed',
           error: {
-            message: response?.data?.error?.message || response?.data?.message || 'Email already exists',
+            message:
+              response?.data?.error?.message ||
+              response?.data?.message ||
+              'Email already exists',
           },
-          data: response?.data?.data
+          data: response?.data?.data,
         });
       }
 
@@ -86,15 +89,17 @@ export const authRegister = createAsyncThunk(
           statusCode: response?.data?.statusCode,
           message: response?.data?.message || 'Registration failed',
           error: {
-            message: response?.data?.error?.message || response?.data?.message || 'Registration failed',
+            message:
+              response?.data?.error?.message ||
+              response?.data?.message ||
+              'Registration failed',
           },
-          data: response?.data?.data
+          data: response?.data?.data,
         });
       }
-
     } catch (error) {
       console.log('🚨 [FRONTEND] Registration error:', error);
-      
+
       // Handle HTTP error responses
       if (error?.response?.data) {
         const errorData = error.response.data;
@@ -102,12 +107,16 @@ export const authRegister = createAsyncThunk(
           statusCode: errorData?.statusCode || error?.response?.status || 500,
           message: errorData?.message || 'Registration failed',
           error: {
-            message: errorData?.error?.message || errorData?.message || error?.message || 'Registration failed',
+            message:
+              errorData?.error?.message ||
+              errorData?.message ||
+              error?.message ||
+              'Registration failed',
           },
-          data: errorData?.data
+          data: errorData?.data,
         });
       }
-      
+
       // Handle network or other errors
       return rejectWithValue({
         statusCode: error?.code || 500,
@@ -115,7 +124,7 @@ export const authRegister = createAsyncThunk(
         error: {
           message: error?.message || 'Network error occurred',
         },
-        data: null
+        data: null,
       });
     }
   },
@@ -128,10 +137,10 @@ export const authLogin = createAsyncThunk(
   'auth/login',
   async (payload, { rejectWithValue }) => {
     console.log('🔐 [FRONTEND] Email/Password login started');
-    console.log('📋 [FRONTEND] Login payload:', { 
-      email: payload?.email, 
+    console.log('📋 [FRONTEND] Login payload:', {
+      email: payload?.email,
       hasPassword: !!payload?.password,
-      role: payload?.role 
+      role: payload?.role,
     });
 
     try {
@@ -141,15 +150,17 @@ export const authLogin = createAsyncThunk(
         payload?.email,
         payload?.password,
       );
-      
+
       console.log('✅ [FRONTEND] Firebase authentication successful:', {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
-        emailVerified: userCredential.user.emailVerified
+        emailVerified: userCredential.user.emailVerified,
       });
 
       const idToken = await userCredential.user.getIdToken();
-      console.log('🎫 [FRONTEND] ID token obtained:', { tokenLength: idToken?.length });
+      console.log('🎫 [FRONTEND] ID token obtained:', {
+        tokenLength: idToken?.length,
+      });
 
       if (!userCredential?.user?.emailVerified) {
         console.log('❌ [FRONTEND] Email not verified');
@@ -175,23 +186,25 @@ export const authLogin = createAsyncThunk(
       console.log('📋 [FRONTEND] Backend login response:', {
         statusCode: response?.data?.statusCode,
         hasIdToken: !!response?.data?.data?.idToken,
-        message: response?.data?.message
+        message: response?.data?.message,
       });
 
       if (response?.data?.statusCode === 200) {
         if (response?.data?.data?.idToken) {
-          console.log('🎫 [FRONTEND] Signing in with custom token from backend...');
+          console.log(
+            '🎫 [FRONTEND] Signing in with custom token from backend...',
+          );
           const singInToken = await signInWithCustomToken(
             auth,
             response?.data?.data?.idToken,
           );
-          
+
           console.log('✅ [FRONTEND] Custom token sign-in successful:', {
             hasUser: !!singInToken?.user,
             uid: singInToken?.user?.uid,
-            email: singInToken?.user?.email
+            email: singInToken?.user?.email,
           });
-          
+
           if (singInToken?.user) {
             // Store the access token for future API calls
             const finalToken = await singInToken.user.getIdToken();
@@ -208,9 +221,9 @@ export const authLogin = createAsyncThunk(
         message: error?.message,
         code: error?.code,
         statusCode: error?.statusCode,
-        data: error?.data
+        data: error?.data,
       });
-      
+
       if (error?.data || error?.statusCode) {
         return rejectWithValue(error);
       } else {
@@ -375,8 +388,11 @@ export const verifyEmail = createAsyncThunk(
   'user/verifyEmail',
   async (stateCode, { rejectWithValue }) => {
     console.log('📧 [FRONTEND] Email verification started');
-    console.log('🔍 [FRONTEND] State code:', { hasStateCode: !!stateCode, length: stateCode?.length });
-    
+    console.log('🔍 [FRONTEND] State code:', {
+      hasStateCode: !!stateCode,
+      length: stateCode?.length,
+    });
+
     try {
       console.log('📤 [FRONTEND] Sending verification request to backend...');
       const response = await apiClient.request({
@@ -387,7 +403,7 @@ export const verifyEmail = createAsyncThunk(
 
       console.log('✅ [FRONTEND] Verification response received:', {
         statusCode: response?.data?.statusCode,
-        message: response?.data?.message
+        message: response?.data?.message,
       });
 
       if (response?.data?.statusCode === 200) {
@@ -404,7 +420,7 @@ export const verifyEmail = createAsyncThunk(
         console.log('📋 [FRONTEND] Login response received:', {
           statusCode: loginResponse?.data?.statusCode,
           hasIdToken: !!loginResponse?.data?.data?.idToken,
-          message: loginResponse?.data?.message
+          message: loginResponse?.data?.message,
         });
 
         if (
@@ -416,17 +432,20 @@ export const verifyEmail = createAsyncThunk(
             auth,
             loginResponse?.data?.data?.idToken,
           );
-          
+
           console.log('✅ [FRONTEND] Custom token sign-in successful:', {
             hasUser: !!singInToken?.user,
             uid: singInToken?.user?.uid,
-            email: singInToken?.user?.email
+            email: singInToken?.user?.email,
           });
-          
+
           if (singInToken?.user) {
             // Store the access token for future API calls
             if (loginResponse?.data?.data?.idToken) {
-              localStorage.setItem('accessToken', await singInToken.user.getIdToken());
+              localStorage.setItem(
+                'accessToken',
+                await singInToken.user.getIdToken(),
+              );
               console.log('💾 [FRONTEND] Access token stored in localStorage');
             }
             return singInToken?.user;
@@ -440,9 +459,9 @@ export const verifyEmail = createAsyncThunk(
       console.log('💥 [FRONTEND] Email verification error:', {
         message: error?.message,
         statusCode: error?.statusCode,
-        data: error?.data
+        data: error?.data,
       });
-      
+
       if (error?.data || error?.statusCode) {
         return rejectWithValue(error);
       } else {
@@ -745,17 +764,17 @@ const AuthSlice = createSlice({
         state.providerLoading = false;
 
         const serverErrorObj = action?.payload;
-        
+
         // Handle role mismatch error specifically
         if (serverErrorObj?.error?.type === 'ROLE_MISMATCH') {
           state.error = {
             ...serverErrorObj,
             error: {
               message: `Account Already Exists with Different Role`,
-              details: serverErrorObj.message
+              details: serverErrorObj.message,
             },
             message: `This email is registered as a ${serverErrorObj.data?.existingRole}`,
-            suggestion: serverErrorObj.data?.suggestion
+            suggestion: serverErrorObj.data?.suggestion,
           };
         } else {
           state.error = action.payload;
