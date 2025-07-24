@@ -45,7 +45,7 @@ let AuthService = class AuthService {
         console.log('🔐 [AUTH SERVICE] Starting token verification:', {
             hasToken: !!token,
             tokenLength: token?.length,
-            type
+            type,
         });
         try {
             const providerUser = await this.firebaseService
@@ -55,7 +55,7 @@ let AuthService = class AuthService {
                 uid: providerUser.uid,
                 email: providerUser.email,
                 emailVerified: providerUser.email_verified,
-                name: providerUser.name
+                name: providerUser.name,
             });
             if (!providerUser) {
                 console.log('❌ [AUTH SERVICE] No provider user returned from token verification');
@@ -93,7 +93,7 @@ let AuthService = class AuthService {
             console.log('💥 [AUTH SERVICE] Token verification failed:', {
                 error: error?.message,
                 code: error?.code,
-                type
+                type,
             });
             throw error;
         }
@@ -264,7 +264,7 @@ let AuthService = class AuthService {
             hasToken: !!token,
             tokenLength: token?.length,
             role,
-            provider
+            provider,
         });
         try {
             let userRecord;
@@ -289,7 +289,7 @@ let AuthService = class AuthService {
                 console.log('✅ [AUTH SERVICE] Provider token verified:', {
                     uid: userRecord.uid,
                     email: userRecord.email,
-                    displayName: userRecord.displayName
+                    displayName: userRecord.displayName,
                 });
                 console.log('👤 [AUTH SERVICE] Checking if user exists in Firebase Auth...');
                 const authUser = await this.firebaseService
@@ -297,7 +297,7 @@ let AuthService = class AuthService {
                     .getUser(userRecord.uid);
                 console.log('✅ [AUTH SERVICE] Firebase Auth user found:', {
                     uid: authUser.uid,
-                    email: authUser.email
+                    email: authUser.email,
                 });
                 console.log('🗄️ [AUTH SERVICE] Checking if user profile exists in Firestore...');
                 const dbUser = await this.firebaseService
@@ -307,7 +307,7 @@ let AuthService = class AuthService {
                     .get();
                 console.log('📊 [AUTH SERVICE] Firestore profile check:', {
                     exists: dbUser.exists,
-                    uid: userRecord.uid
+                    uid: userRecord.uid,
                 });
                 if (authUser && dbUser.exists === false) {
                     console.log('📝 [AUTH SERVICE] User not found in Firestore, auto-registering...');
@@ -321,7 +321,7 @@ let AuthService = class AuthService {
                     });
                     console.log('✅ [AUTH SERVICE] Auto-registration result:', {
                         statusCode: registerResult.statusCode,
-                        message: registerResult.message
+                        message: registerResult.message,
                     });
                 }
                 console.log('🔄 [AUTH SERVICE] Re-fetching user record after registration...');
@@ -374,12 +374,12 @@ let AuthService = class AuthService {
                 profileExists: !!userProfile,
                 profileRole: userProfile?.role,
                 requestedRole: role,
-                email: userProfile?.email
+                email: userProfile?.email,
             });
             if (userProfile?.role !== role) {
                 console.log('❌ [AUTH SERVICE] Role mismatch detected:', {
                     profileRole: userProfile?.role,
-                    requestedRole: role
+                    requestedRole: role,
                 });
                 const errorMessage = `This email is already registered as a ${userProfile?.role}. Please login using the ${userProfile?.role} portal or contact support to change your role.`;
                 return {
@@ -389,12 +389,12 @@ let AuthService = class AuthService {
                         existingRole: userProfile?.role,
                         requestedRole: role,
                         email: userProfile?.email,
-                        suggestion: `Try logging in as a ${userProfile?.role} instead`
+                        suggestion: `Try logging in as a ${userProfile?.role} instead`,
                     },
                     error: {
                         code: common_1.HttpStatus.CONFLICT,
                         message: errorMessage,
-                        extra: { type: 'ROLE_MISMATCH' }
+                        extra: { type: 'ROLE_MISMATCH' },
                     },
                 };
             }
@@ -417,7 +417,7 @@ let AuthService = class AuthService {
                 message: error?.message,
                 code: error?.code,
                 name: error?.name,
-                stack: error?.stack?.substring(0, 200)
+                stack: error?.stack?.substring(0, 200),
             });
             const firebaseError = error;
             if (firebaseError.code === 'auth/user-not-found') {

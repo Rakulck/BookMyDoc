@@ -43,7 +43,7 @@ export const generateTimeOptions = (statEnd) => {
 
     times.push({
       value: `${start.getHours()}:${minutes}`,
-      label: `${hours.toString().padStart(2, 0)}:${minutes} ${ampm}`,
+      label: `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`,
     });
     start.setMinutes(start.getMinutes() + 30);
   }
@@ -54,8 +54,8 @@ export const generateTimeOptions = (statEnd) => {
 export const prepareAvailabilitySlots = (slots = []) => {
   const results = [];
   for (const slot of slots) {
-    if (results[slot?.day?.toLocaleLowerCase()]) {
-      results[slot?.day].timeSlots.push({
+    if (results[slot?.day?.toLowerCase()]) {
+      results[slot?.day?.toLowerCase()].timeSlots.push({
         ...slot,
         start: {
           value: slot?.start_time,
@@ -67,7 +67,7 @@ export const prepareAvailabilitySlots = (slots = []) => {
         },
       });
     } else {
-      results[slot?.day?.toLocaleLowerCase()] = {
+      results[slot?.day?.toLowerCase()] = {
         enabled: true,
         day: slot?.day,
         timeSlots: [

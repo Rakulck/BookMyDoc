@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import { ScaleLoader } from 'react-spinners';
 import { useGetAllServicesQuery } from './../../store/slices';
-import MultipleSelect from './MultipleSelect';
+// import MultipleSelect from './MultipleSelect';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -20,14 +20,15 @@ const Profile = () => {
   const [formFields, setFormFields] = useState({
     display_name: '',
     title: '',
+    hospital_name: '',
     expertiseList: [],
     experience: '',
     bio: '',
     photoUrl: '',
     phone: '',
     gender: '',
-    services: [],
-    servicesIds: [],
+    // services: [],
+    // servicesIds: [],
     location: {
       address: '',
       city: '',
@@ -53,6 +54,7 @@ const Profile = () => {
       setFormFields({
         display_name: user.display_name,
         title: user.title,
+        hospital_name: user.hospital_name,
         expertiseList: user.expertiseList,
         experience: user.experience,
         bio: user.bio,
@@ -126,6 +128,7 @@ const Profile = () => {
     formData.append('gender', String(formFields.gender));
     formData.append('bio', String(formFields.bio));
     formData.append('experience', Number(formFields.experience));
+    formData.append('hospital_name', String(formFields.hospital_name));
 
     if (formFields.location) {
       formData.append('location', JSON.stringify(formFields.location));
@@ -194,61 +197,98 @@ const Profile = () => {
       <div className="container">
         <ToastContainer />
         <div className="row justify-content-center mt-4 center">
-          <div className="col-md-7">
+          <div className="col-md-10">
             <div className="card shadow-sm">
-              <img
-                src={photoPreviewUrl || '/placeholder.png'}
-                alt="Doctor's profile"
-                className="rounded-circle mx-auto d-block mt-3"
-                style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-              />
-              <div className="card-body text-center">
+              <div className="card-body">
                 {isEditing ? (
                   <form
                     onSubmit={handleFormSubmit}
                     encType="multipart/form-data"
                     className="profile-form"
                   >
-                    <div className="form-group">
-                      <label htmlFor="display_name">Full Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="display_name"
-                        name="display_name"
-                        value={formFields?.display_name || ''}
-                        onChange={handleChange}
-                        placeholder="Enter name"
-                      />
+                    <div className="profile-image-edit-section">
+                      <div className="current-profile-image">
+                        <img
+                          src={photoPreviewUrl || '/placeholder.png'}
+                          alt="Current profile"
+                          className="edit-profile-image"
+                        />
+                        <div className="image-edit-overlay">
+                          <label htmlFor="file" className="image-edit-btn">
+                            <FaEdit /> Change Photo
+                          </label>
+                          <input
+                            type="file"
+                            className="hidden-file-input"
+                            id="file"
+                            name="file"
+                            onChange={handleFileChange}
+                            accept="image/*"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="title">Designation/Title</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="title"
-                        name="title"
-                        value={formFields?.title || ''}
-                        onChange={handleChange}
-                        placeholder="Enter title"
-                      />
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="display_name">Full Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="display_name"
+                          name="display_name"
+                          value={formFields?.display_name || ''}
+                          onChange={handleChange}
+                          placeholder="Enter name"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="title">Designation/Title</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="title"
+                          name="title"
+                          value={formFields?.title || ''}
+                          onChange={handleChange}
+                          placeholder="Enter title"
+                        />
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="phone">Phone</label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        id="phone"
-                        name="phone"
-                        value={formFields?.phone || ''}
-                        onChange={handleChange}
-                        placeholder="Enter phone number"
-                      />
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="phone">Phone</label>
+                        <input
+                          type="tel"
+                          className="form-control"
+                          id="phone"
+                          name="phone"
+                          value={formFields?.phone || ''}
+                          onChange={handleChange}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="gender">Gender</label>
+                        <select
+                          className="form-control"
+                          id="gender"
+                          name="gender"
+                          value={formFields?.gender || ''}
+                          onChange={handleChange}
+                        >
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group full-width">
                       <label htmlFor="bio">Bio</label>
                       <textarea
                         className="form-control"
@@ -260,36 +300,37 @@ const Profile = () => {
                       ></textarea>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="gender">Gender</label>
-                      <select
-                        className="form-control"
-                        id="gender"
-                        name="gender"
-                        value={formFields?.gender || ''}
-                        onChange={handleChange}
-                      >
-                        <option value="">Select gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                      </select>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="experience">Experience (Years)</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="experience"
+                          name="experience"
+                          value={formFields?.experience || ''}
+                          onChange={handleChange}
+                          placeholder="Enter experience"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="hospital_name">
+                          Hospital/Clinic Name
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="hospital_name"
+                          name="hospital_name"
+                          value={formFields?.hospital_name || ''}
+                          onChange={handleChange}
+                          placeholder="Enter hospital or clinic name"
+                        />
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="experience">Experience</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="experience"
-                        name="experience"
-                        value={formFields?.experience || ''}
-                        onChange={handleChange}
-                        placeholder="Enter experience"
-                      />
-                    </div>
-
-                    <div className="form-group">
+                    <div className="form-group full-width">
                       <label htmlFor="expertiseList">Specialty/Expertise</label>
                       <div className="tags-input-wrapper">
                         <div className="tags">
@@ -317,71 +358,70 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="form-group">
+                    {/* <div className="form-group full-width">
                       <MultipleSelect
                         data={servicesData || []}
                         formFields={{ services: [] }}
                         handleChange={handleChange}
                       />
-                    </div>
+                    </div> */}
 
-                    <div className="form-group">
-                      <label htmlFor="location">Address</label>
-                      {/* Render Address fields if AddressDto is available */}
-                      {/* Assuming AddressDto has fields like street, city, state, country */}
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="location_address"
-                        name="address"
-                        value={formFields?.location?.address || ''}
-                        onChange={handleChange}
-                        placeholder="Enter Address"
-                      />
+                    <div className="form-section">
+                      <h5 className="section-title">Address Information</h5>
 
-                      <label htmlFor="location">City</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="location_city"
-                        name="city"
-                        value={formFields?.location?.city || ''}
-                        onChange={handleChange}
-                        placeholder="Enter city"
-                      />
+                      <div className="form-group full-width">
+                        <label htmlFor="location_address">Street Address</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="location_address"
+                          name="address"
+                          value={formFields?.location?.address || ''}
+                          onChange={handleChange}
+                          placeholder="Enter Address"
+                        />
+                      </div>
 
-                      <label htmlFor="location">State</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="location_state"
-                        name="state"
-                        value={formFields?.location?.state || ''}
-                        onChange={handleChange}
-                        placeholder="Enter state"
-                      />
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label htmlFor="location_city">City</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="location_city"
+                            name="city"
+                            value={formFields?.location?.city || ''}
+                            onChange={handleChange}
+                            placeholder="Enter city"
+                          />
+                        </div>
 
-                      <label htmlFor="location">Country</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="country"
-                        name="location_country"
-                        value={formFields?.location?.country || ''}
-                        onChange={handleChange}
-                        placeholder="Enter country"
-                      />
-                    </div>
+                        <div className="form-group">
+                          <label htmlFor="location_state">State</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="location_state"
+                            name="state"
+                            value={formFields?.location?.state || ''}
+                            onChange={handleChange}
+                            placeholder="Enter state"
+                          />
+                        </div>
+                      </div>
 
-                    <div className="form-group">
-                      <label htmlFor="file">Profile Image</label>
-                      <input
-                        type="file"
-                        className="form-control"
-                        id="file"
-                        name="file"
-                        onChange={handleFileChange}
-                      />
+                      <div className="form-group full-width">
+                        <label htmlFor="country">Country</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="country"
+                          name="country"
+                          value={formFields?.location?.country || ''}
+                          onChange={handleChange}
+                          placeholder="Enter country"
+                        />
+                      </div>
                     </div>
 
                     <div className="form-group divided">
@@ -398,47 +438,81 @@ const Profile = () => {
                     </div>
                   </form>
                 ) : (
-                  <div className="card-body text-center">
-                    <h3 className="card-title ">{profileData?.display_name}</h3>
-                    <h5 className="card-title ">{profileData?.title}</h5>
-                    <h4>Expertise </h4>
-                    <p className="card-subtitle mb-2 text-muted  head-experties">
-                      {profileData?.expertiseList &&
-                      profileData.expertiseList?.length ? (
-                        profileData.expertiseList?.map((speciality, index) => (
-                          <p className="experties" key={index}>
-                            {speciality}
-                          </p>
-                        ))
-                      ) : (
-                        <p>No Expertise</p>
-                      )}
-                    </p>
-                    <p className="card-text">
-                      <span className="text-muted">Experience:</span>{' '}
-                      {profileData?.experience}+ years
-                    </p>
+                  <div className="profile-horizontal-layout">
+                    <div className="profile-image-section">
+                      <img
+                        src={photoPreviewUrl || '/placeholder.png'}
+                        alt="Doctor's profile"
+                        className="profile-image"
+                      />
+                    </div>
+                    <div className="profile-info-section">
+                      <div className="profile-header">
+                        <h2 className="profile-name">
+                          {profileData?.display_name}
+                        </h2>
+                        <h4 className="profile-title">{profileData?.title}</h4>
+                        {profileData?.hospital_name && (
+                          <h5 className="profile-hospital">
+                            {profileData?.hospital_name}
+                          </h5>
+                        )}
+                        <div className="profile-experience">
+                          <span className="experience-badge">
+                            {profileData?.experience}+ years experience
+                          </span>
+                        </div>
+                      </div>
 
-                    <h4>Services </h4>
-                    <p className="card-subtitle mb-2 text-muted  head-experties">
-                      {profileData?.services && profileData.services?.length ? (
-                        profileData.services?.map((service, index) => (
-                          <p className="experties" key={index}>
-                            {service.name}
-                          </p>
-                        ))
-                      ) : (
-                        <p>No Expertise</p>
-                      )}
-                    </p>
+                      <div className="profile-bio">
+                        <p>{profileData?.bio}</p>
+                      </div>
 
-                    <p className="card-text">{profileData?.bio}</p>
-                    <button
-                      onClick={handleEditClick}
-                      className="btn btn-link text-secondary"
-                    >
-                      <FaEdit /> Edit
-                    </button>
+                      <div className="profile-expertise">
+                        <h5>Specialties</h5>
+                        <div className="expertise-tags">
+                          {profileData?.expertiseList &&
+                          profileData.expertiseList?.length ? (
+                            profileData.expertiseList?.map(
+                              (speciality, index) => (
+                                <span className="expertise-tag" key={index}>
+                                  {speciality}
+                                </span>
+                              ),
+                            )
+                          ) : (
+                            <span className="no-data">
+                              No specialties listed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* <div className="profile-services">
+                        <h5>Services</h5>
+                        <div className="services-tags">
+                          {profileData?.services &&
+                          profileData.services?.length ? (
+                            profileData.services?.map((service, index) => (
+                              <span className="service-tag" key={index}>
+                                {service.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="no-data">No services listed</span>
+                          )}
+                        </div>
+                      </div> */}
+
+                      <div className="profile-actions">
+                        <button
+                          onClick={handleEditClick}
+                          className="btn btn-primary edit-btn"
+                        >
+                          <FaEdit /> Edit Profile
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

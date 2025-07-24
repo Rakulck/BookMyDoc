@@ -9,6 +9,7 @@ import ProtectedRoute from './lib/ProtectedRoute';
 import ForgotPassword from './components/login/ForgotPassword';
 import Verify from './components/Verify';
 
+const Dashboard = React.lazy(() => import('./components/dashboard/dashboard'));
 const Profile = React.lazy(() => import('./components/profile/Profile'));
 const Availability = React.lazy(
   () => import('./components/availability/Availability'),
@@ -29,6 +30,14 @@ function App() {
 
         <Route path="/verify" element={<Verify />} />
         <Route path="/" element={<Layout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/availability"
             element={
@@ -59,7 +68,7 @@ function App() {
           />
           <Route
             path="/"
-            element={<ProtectedRoute element={<Availability />} />}
+            element={<ProtectedRoute element={<Dashboard />} />}
           />
         </Route>
       </Routes>

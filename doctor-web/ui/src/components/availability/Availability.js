@@ -38,7 +38,7 @@ const daysOfWeek = [
 const initialTimeSlot = {
   start_time: '09:00',
   start: { value: '09:00', label: '09:00 AM' },
-  end_time: '09:00',
+  end_time: '17:00',
   end: { value: '17:00', label: '05:00 PM' },
 };
 
@@ -49,14 +49,14 @@ const Availability = () => {
   const { data, isLoading, isError } = useGetAvailabilitySlotsQuery({});
   const [saveAvailabilitySlots, saveAvailabilitySlotsResult] =
     useSaveAvailabilitySlotsMutation();
-  const [availability, setAvailability] = useState(
+  const [availability, setAvailability] = useState(() =>
     daysOfWeek.reduce((results, day) => {
-      results[day.toLocaleLowerCase()] = {
+      results[day.toLowerCase()] = {
         day,
         enabled: false,
         timeSlots: [
           {
-            day: day.toLocaleLowerCase(),
+            day: day.toLowerCase(),
             ...initialTimeSlot,
           },
         ],
@@ -68,76 +68,103 @@ const Availability = () => {
   useEffect(() => {
     if (data && !isError) {
       const results = prepareAvailabilitySlots(data);
-      setAvailability({ ...availability, ...results });
+      setAvailability((prevAvailability) => ({
+        ...prevAvailability,
+        ...results,
+      }));
     }
-  }, [data, availability, isError]);
+  }, [data, isError]);
 
   const handleToggle = (dayKey) => {
-    console.log(dayKey);
-    const updatedAvailability = { ...availability };
-    updatedAvailability[dayKey].enabled = !updatedAvailability[dayKey].enabled;
-    setAvailability(updatedAvailability);
+    setAvailability((prev) => ({
+      ...prev,
+      [dayKey]: {
+        ...prev[dayKey],
+        enabled: !prev[dayKey].enabled,
+      },
+    }));
   };
 
   const handleTimeChange = (dayKey, slotIndex, field, value) => {
-    const updatedAvailability = { ...availability };
     const timeData = JSON.parse(value);
-    updatedAvailability[dayKey].timeSlots[slotIndex][field] = timeData;
-    updatedAvailability[dayKey].timeSlots[slotIndex][field + '_time'] =
-      timeData.value;
-    const startTime =
-      updatedAvailability[dayKey].timeSlots[slotIndex].start_time?.split(':');
 
-    let endTime =
-      field === 'end' && timeData.value === '0:00' ? '24:00' : timeData.value;
-    endTime = endTime?.split(':');
-    const compareTime =
-      new Date(0, 0, 0, endTime?.[0], +endTime?.[1]) -
-      new Date(0, 0, 0, startTime?.[0], startTime?.[1]);
-    if (field === 'end' && compareTime < 0) {
-      ToastMessage({
-        title: 'Invalid date slot. Please select correct time',
-        message:
-          "You can't select end time smaller then stat time and cross the day.",
-        options: { type: 'danger' },
-      });
-    } else {
-      setAvailability(updatedAvailability);
-    }
+    setAvailability((prev) => {
+      const updatedAvailability = { ...prev };
+      updatedAvailability[dayKey].timeSlots[slotIndex][field] = timeData;
+      updatedAvailability[dayKey].timeSlots[slotIndex][field + '_time'] =
+        timeData.value;
+
+      const startTime =
+        updatedAvailability[dayKey].timeSlots[slotIndex].start_time?.split(':');
+      let endTime =
+        field === 'end' && timeData.value === '0:00' ? '24:00' : timeData.value;
+      endTime = endTime?.split(':');
+
+      const compareTime =
+        new Date(0, 0, 0, endTime?.[0], +endTime?.[1]) -
+        new Date(0, 0, 0, startTime?.[0], startTime?.[1]);
+
+      if (field === 'end' && compareTime < 0) {
+        ToastMessage({
+          title: 'Invalid time slot. Please select correct time',
+          message:
+            "You can't select end time smaller than start time and cross the day.",
+          options: { type: 'danger' },
+        });
+        return prev; // Don't update state if invalid
+      }
+
+      return updatedAvailability;
+    });
   };
 
   const handleAddSlot = (dayKey) => {
-    const updatedAvailability = { ...availability };
-    updatedAvailability[dayKey].timeSlots.push({
-      ...initialTimeSlot,
-      day: dayKey,
-    });
-    setAvailability(updatedAvailability);
+    setAvailability((prev) => ({
+      ...prev,
+      [dayKey]: {
+        ...prev[dayKey],
+        timeSlots: [
+          ...prev[dayKey].timeSlots,
+          {
+            ...initialTimeSlot,
+            day: dayKey,
+          },
+        ],
+      },
+    }));
   };
 
   const handleRemoveSlot = (dayKey, slotIndex) => {
-    const updatedAvailability = { ...availability };
-    updatedAvailability[dayKey].timeSlots.splice(slotIndex, 1);
-    if (updatedAvailability[dayKey].timeSlots?.length <= 0) {
-      updatedAvailability[dayKey].enabled = false;
-    }
-    setAvailability(updatedAvailability);
+    setAvailability((prev) => {
+      const updatedAvailability = { ...prev };
+      updatedAvailability[dayKey].timeSlots.splice(slotIndex, 1);
+      if (updatedAvailability[dayKey].timeSlots?.length <= 0) {
+        updatedAvailability[dayKey].enabled = false;
+      }
+      return updatedAvailability;
+    });
   };
 
   const handleCloneSlot = (dayKey, slotIndex) => {
-    const updatedAvailability = { ...availability };
-    const clonedSlot = {
-      ...updatedAvailability[dayKey].timeSlots[slotIndex],
-    };
-    updatedAvailability[dayKey].timeSlots.splice(slotIndex + 1, 0, clonedSlot);
-    setAvailability(updatedAvailability);
+    setAvailability((prev) => {
+      const updatedAvailability = { ...prev };
+      const clonedSlot = {
+        ...updatedAvailability[dayKey].timeSlots[slotIndex],
+      };
+      updatedAvailability[dayKey].timeSlots.splice(
+        slotIndex + 1,
+        0,
+        clonedSlot,
+      );
+      return updatedAvailability;
+    });
   };
 
   const handleSave = () => {
     const payload = [];
-    const data = { ...availability };
-    for (const slotKey in data) {
-      const slots = data[slotKey];
+    const availabilityData = { ...availability };
+    for (const slotKey in availabilityData) {
+      const slots = availabilityData[slotKey];
       if (slots?.enabled) {
         payload.push(...slots.timeSlots);
       }
@@ -145,19 +172,17 @@ const Availability = () => {
     saveAvailabilitySlots(payload);
   };
 
-  // console.log('availability', availability);
-
   return (
     <div id="availability">
-      <div className="container mt-4 d-flex justify-content-center align-items-center">
+      <div className="container mt-3 d-flex justify-content-center align-items-center">
         <Loader loading={isLoading} />
         <ToastContainer />
         <Card
-          className="shadow-lg p-4"
-          style={{ width: '100%', maxWidth: '800px' }}
+          className="shadow-sm p-3"
+          style={{ width: '100%', maxWidth: '700px' }}
         >
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="text-center mb-0">Set Your Availability</h1>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h1 className="text-center mb-0">Schedule</h1>
             <Button
               variant="primary"
               onClick={handleSave}
@@ -174,9 +199,13 @@ const Availability = () => {
               return (
                 <Row
                   key={day.day}
-                  className="day-container mb-3 align-items-center"
+                  className="day-container mb-2 align-items-center"
                 >
-                  <Col xs={3} className="d-flex align-items-center">
+                  <Col
+                    xs={12}
+                    sm={3}
+                    className="d-flex align-items-center mb-2 mb-sm-0"
+                  >
                     <Form.Check
                       type="switch"
                       id={`switch-${day.day}`}
@@ -187,13 +216,14 @@ const Availability = () => {
                       style={{ textTransform: 'capitalize' }}
                     />
                   </Col>
-                  <Col xs={9}>
+                  <Col xs={12} sm={9}>
                     {day.enabled && (
                       <div className="time-slots-container">
                         {day.timeSlots.map((slot, slotIndex) => (
                           <InputGroup
                             key={slotIndex}
                             className="mb-2 align-items-center"
+                            size="sm"
                           >
                             <DropdownButton
                               as={InputGroup.Prepend}
@@ -201,6 +231,7 @@ const Availability = () => {
                               title={slot.start?.label}
                               id={`dropdown-start-${dayIndex}-${slotIndex}`}
                               className="time-dropdown"
+                              size="sm"
                               onSelect={(value) =>
                                 handleTimeChange(
                                   dayKey,
@@ -222,7 +253,7 @@ const Availability = () => {
                               </div>
                             </DropdownButton>
 
-                            <InputGroup.Text> - </InputGroup.Text>
+                            <InputGroup.Text>-</InputGroup.Text>
 
                             <DropdownButton
                               as={InputGroup.Append}
@@ -230,6 +261,7 @@ const Availability = () => {
                               title={slot.end?.label}
                               id={`dropdown-end-${dayIndex}-${slotIndex}`}
                               className="time-dropdown"
+                              size="sm"
                               onSelect={(value) =>
                                 handleTimeChange(
                                   dayKey,
@@ -253,7 +285,8 @@ const Availability = () => {
                             <Button
                               variant="outline-secondary"
                               onClick={() => handleCloneSlot(dayKey, slotIndex)}
-                              className="ml-2"
+                              size="sm"
+                              className="ms-1"
                             >
                               <FaClone />
                             </Button>
@@ -262,7 +295,8 @@ const Availability = () => {
                               onClick={() =>
                                 handleRemoveSlot(dayKey, slotIndex)
                               }
-                              className="ml-2"
+                              size="sm"
+                              className="ms-1"
                             >
                               <FaTrash />
                             </Button>
@@ -271,8 +305,9 @@ const Availability = () => {
                         <Button
                           variant="outline-primary"
                           onClick={() => handleAddSlot(dayKey)}
+                          size="sm"
                         >
-                          <FaPlus /> Add Time Slot
+                          <FaPlus className="me-1" /> Add Slot
                         </Button>
                       </div>
                     )}
