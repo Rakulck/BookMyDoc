@@ -9,17 +9,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UiService = void 0;
 const common_1 = require("@nestjs/common");
 const node_path_1 = require("node:path");
-console.log((0, node_path_1.join)(__dirname, '..', 'ui', 'build'));
+const node_fs_1 = require("node:fs");
 let UiService = class UiService {
     createLoggerOptions() {
+        const possiblePaths = [
+            (0, node_path_1.join)(__dirname, '..', 'ui', 'build'),
+            (0, node_path_1.join)(process.cwd(), 'ui', 'build'),
+            (0, node_path_1.join)(__dirname, '..', '..', 'ui', 'build'),
+        ];
+        let rootPath = possiblePaths[0];
+        for (const path of possiblePaths) {
+            if ((0, node_fs_1.existsSync)(path)) {
+                rootPath = path;
+                break;
+            }
+        }
+        console.log(`Serving UI from: ${rootPath}`);
+        console.log(`Path exists: ${(0, node_fs_1.existsSync)(rootPath)}`);
         return [
             {
-                rootPath: (0, node_path_1.join)(__dirname, '..', 'ui', 'build'),
-                renderPath: /^((?!^\/(api|_health)).)*$/s,
+                rootPath,
+                renderPath: /^((?!^\/(api|health|api-docs)).)*$/s,
                 exclude: ['/api*', '/health*', '/api-docs*'],
                 serveStaticOptions: {
                     cacheControl: true,
-                    maxAge: '1year',
+                    maxAge: process.env.NODE_ENV === 'production' ? '1y' : '0',
+                    etag: true,
+                    lastModified: true,
                 },
             },
         ];

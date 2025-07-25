@@ -36,12 +36,19 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         logger: ['log', 'error', 'warn'],
     });
-    app.enableCors({
-        origin: [
+    const corsOrigins = process.env.NODE_ENV === 'production'
+        ? [
+            'https://your-production-domain.com',
+            'https://your-vercel-domain.vercel.app',
+            'http://142.93.179.32:3030',
+        ]
+        : [
             'http://localhost:3000',
             'http://localhost:3001',
             'http://127.0.0.1:3001',
-        ],
+        ];
+    app.enableCors({
+        origin: corsOrigins,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         preflightContinue: false,
         optionsSuccessStatus: 204,
@@ -66,7 +73,7 @@ async function bootstrap() {
     }));
     let swaggerApiServer = `http://localhost:${process.env.PUBLISH_PORT || process.env.PORT}`;
     if (process.env.NODE_ENV === 'production') {
-        swaggerApiServer = `http://142.93.179.32:3030`;
+        swaggerApiServer = process.env.SWAGGER_SERVER || `http://142.93.179.32:3030`;
     }
     const swaggerConfig = new swagger_1.DocumentBuilder()
         .setTitle('Doctor Appointment Booking')

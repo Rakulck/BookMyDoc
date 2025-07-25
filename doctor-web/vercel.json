@@ -4,11 +4,15 @@
     {
       "src": "dist/main.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "ui/build/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "(.*)",
+      "src": "/api/(.*)",
       "dest": "dist/main.js",
       "methods": [
         "GET",
@@ -18,9 +22,34 @@
         "PATCH",
         "OPTIONS"
       ]
+    },
+    {
+      "src": "/health/(.*)",
+      "dest": "dist/main.js"
+    },
+    {
+      "src": "/api-docs/(.*)",
+      "dest": "dist/main.js"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "ui/build/static/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map))",
+      "dest": "ui/build/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "ui/build/index.html"
     }
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "dist/main.js": {
+      "maxDuration": 30
+    }
   }
 }

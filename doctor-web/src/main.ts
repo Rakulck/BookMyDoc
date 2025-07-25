@@ -14,12 +14,21 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn'],
   });
 
+  // Environment-aware CORS configuration
+  const corsOrigins = process.env.NODE_ENV === 'production' 
+    ? [
+        'https://your-production-domain.com', // Replace with your actual production domain
+        'https://your-vercel-domain.vercel.app', // Replace with your Vercel domain
+        'http://142.93.179.32:3030', // Your production server IP
+      ]
+    : [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-    ],
+    origin: corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -32,6 +41,7 @@ async function bootstrap() {
     ],
     credentials: true,
   });
+
   app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
   app.enableVersioning({
     type: VersioningType.URI,
@@ -50,7 +60,7 @@ async function bootstrap() {
   let swaggerApiServer = `http://localhost:${process.env.PUBLISH_PORT || process.env.PORT}`;
 
   if (process.env.NODE_ENV === 'production') {
-    swaggerApiServer = `http://142.93.179.32:3030`;
+    swaggerApiServer = process.env.SWAGGER_SERVER || `http://142.93.179.32:3030`;
   }
 
   const swaggerConfig = new DocumentBuilder()
