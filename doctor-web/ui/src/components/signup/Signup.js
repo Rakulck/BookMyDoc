@@ -5,13 +5,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Signup.css';
 import signupBackground from '../../assets/images/doc_image.jpg'; // Ensure the image exists
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faApple } from '@fortawesome/free-brands-svg-icons';
 import { useDispatch, useSelector } from 'react-redux';
 // import { auth, signInWithPopup, appleProvider } from '../../firebaseConfig';
 import { authGoogleSignIn, authRegister } from '../../store/slices/auth.slice';
 import { ScaleLoader } from 'react-spinners';
 import { ToastErrorMessage } from './../common/ToastMessageWrapper';
+import GoogleLogo from '../common/GoogleLogo';
 
 const Signup = () => {
   const dispatch = useDispatch();
@@ -344,10 +343,7 @@ const Signup = () => {
                     className="btn btn-light mr-2"
                     onClick={handleGoogleSignIn}
                   >
-                    <FontAwesomeIcon icon={faGoogle} />
-                  </button>
-                  <button className="btn btn-light">
-                    <FontAwesomeIcon icon={faApple} />
+                    <GoogleLogo width={20} height={20} />
                   </button>
                 </div>
               ) : (

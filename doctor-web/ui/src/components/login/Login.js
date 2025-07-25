@@ -5,12 +5,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import loginBackground from '../../assets/images/doc_image.jpg';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faApple } from '@fortawesome/free-brands-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { authLogin, authGoogleSignIn } from '../../store/slices/auth.slice';
 import { ScaleLoader } from 'react-spinners';
 import { ToastErrorMessage } from './../common/ToastMessageWrapper';
+import GoogleLogo from '../common/GoogleLogo';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -228,10 +227,7 @@ const Login = () => {
                     className="btn btn-light mr-2"
                     onClick={handleGoogleSignIn}
                   >
-                    <FontAwesomeIcon icon={faGoogle} />
-                  </button>
-                  <button className="btn btn-light">
-                    <FontAwesomeIcon icon={faApple} />
+                    <GoogleLogo width={20} height={20} />
                   </button>
                 </div>
               ) : (
