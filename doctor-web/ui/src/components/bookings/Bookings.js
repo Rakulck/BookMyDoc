@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Nav, Tab, Card, Row, Col } from 'react-bootstrap';
+import { Container, Nav, Tab, Card } from 'react-bootstrap';
 import './Bookings.css';
 import { ToastContainer } from 'react-toastify';
 import BookingCard from './BookingCard';

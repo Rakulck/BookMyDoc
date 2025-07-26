@@ -12,7 +12,7 @@ export class UiService implements ServeStaticModuleOptionsFactory {
     // Try different possible paths for the UI build directory
     const possiblePaths = [
       join(__dirname, '..', 'ui', 'build'), // Default path
-      join(process.cwd(), 'ui', 'build'),   // From project root
+      join(process.cwd(), 'ui', 'build'), // From project root
       join(__dirname, '..', '..', 'ui', 'build'), // Alternative path for some builds
     ];
 

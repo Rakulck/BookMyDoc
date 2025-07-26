@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useGetBookingsQuery } from '../../store/slices/bookings.slice';
 import { useGetAvailabilitySlotsQuery } from '../../store/slices/availability.slice';
@@ -14,7 +14,6 @@ const Dashboard = () => {
     isAuthenticated,
     loading: authLoading,
   } = useSelector((state) => state.auth);
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -24,14 +23,11 @@ const Dashboard = () => {
   }, [dispatch, isAuthenticated, user]);
 
   // Fetch bookings data
-  const {
-    data: bookingsData,
-    isLoading: bookingsLoading,
-    error: bookingsError,
-  } = useGetBookingsQuery({
-    status: 'all',
-    limit: 10,
-  });
+  const { data: bookingsData, isLoading: bookingsLoading } =
+    useGetBookingsQuery({
+      status: 'all',
+      limit: 10,
+    });
 
   // Fetch availability slots
   const { data: availabilityData, isLoading: availabilityLoading } =
