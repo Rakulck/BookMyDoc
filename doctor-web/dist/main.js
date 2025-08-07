@@ -73,7 +73,8 @@ async function bootstrap() {
     }));
     let swaggerApiServer = `http://localhost:${process.env.PUBLISH_PORT || process.env.PORT}`;
     if (process.env.NODE_ENV === 'production') {
-        swaggerApiServer = process.env.SWAGGER_SERVER || `http://142.93.179.32:3030`;
+        swaggerApiServer =
+            process.env.SWAGGER_SERVER || `http://142.93.179.32:3030`;
     }
     const swaggerConfig = new swagger_1.DocumentBuilder()
         .setTitle('Doctor Appointment Booking')
