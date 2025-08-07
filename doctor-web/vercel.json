@@ -1,11 +1,18 @@
 {
   "version": 2,
-  "functions": {
-    "dist/main.js": {
-      "runtime": "@vercel/node@18.19.1",
-      "memory": 1024
+  "builds": [
+    {
+      "src": "dist/main.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    },
+    {
+      "src": "ui/build/**",
+      "use": "@vercel/static"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
