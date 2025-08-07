@@ -208,6 +208,7 @@
   transform: translateY(-10px);
   transition: all 0.2s ease;
   z-index: 1000;
+  padding: 8px;
 }
 
 .user-profile-section:hover .user-dropdown {
@@ -243,11 +244,30 @@
 
 .logout-item {
   color: #dc2626;
-  border-radius: 0 0 12px 12px;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  margin: 6px 0;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
 }
 
 .logout-item:hover {
-  background: #fef2f2;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.logout-item:active {
+  transform: translateY(0.5px);
+}
+
+.logout-item:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 
 .dropdown-divider {

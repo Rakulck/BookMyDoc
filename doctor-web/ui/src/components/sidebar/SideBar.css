@@ -9,8 +9,9 @@
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
+  z-index: 1001;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
 }
 
 /* Brand Section */
@@ -95,13 +96,13 @@
 }
 
 .nav-item.active {
-  background-color: #dbeafe;
-  color: black;
+  background-color: rgba(24, 160, 251, 0.12);
+  color: #111827;
   font-weight: 600;
 }
 
 .nav-item.active .nav-icon {
-  color: black;
+  color: #18a0fb;
 }
 
 /* Logout Button Specific Styling */
@@ -136,7 +137,6 @@
   .sidebar {
     width: 260px;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
   }
   
   .sidebar.open {
@@ -173,7 +173,7 @@
 
 /* Additional Styles for Better UX */
 .nav-item:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #18a0fb;
   outline-offset: -2px;
 }
 
@@ -204,3 +204,72 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 } 
+
+/* Overlay for mobile when sidebar is open */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+}
+
+/* Toggle (hamburger) button */
+.sidebar-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.hamburger,
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #18a0fb;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.hamburger::before {
+  transform: translateY(-6px);
+}
+
+.hamburger::after {
+  transform: translateY(4px);
+}
+
+.hamburger.open {
+  transform: rotate(45deg);
+}
+
+.hamburger.open::before {
+  transform: rotate(-90deg);
+}
+
+.hamburger.open::after {
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Ensure sidebar is always visible on desktop */
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+}
