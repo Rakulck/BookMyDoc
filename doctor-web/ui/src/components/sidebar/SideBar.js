@@ -155,6 +155,30 @@ const SideBar = () => {
             </NavLink>
 
             <NavLink
+              to="/services"
+              className={({ isActive }) =>
+                `nav-item ${isActive ? 'active' : ''}`
+              }
+              onClick={closeSidebar}
+            >
+              <div className="nav-icon">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2ZM12 19C14.21 19 16 17.21 16 15S14.21 11 12 11S8 12.79 8 15S9.79 19 12 19ZM12 13C13.1 13 14 13.9 14 15S13.1 17 12 17S10 16.1 10 15S10.9 13 12 13Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+              <span>Services</span>
+            </NavLink>
+
+            <NavLink
               to="/profile"
               className={({ isActive }) =>
                 `nav-item ${isActive ? 'active' : ''}`

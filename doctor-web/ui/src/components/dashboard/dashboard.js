@@ -4,7 +4,9 @@ import { useGetBookingsQuery } from '../../store/slices/bookings.slice';
 import { useGetAvailabilitySlotsQuery } from '../../store/slices/availability.slice';
 import { fetchUserProfile } from '../../store/slices/auth.slice';
 import { API_BASE_URL } from '../../store/api/api';
+import { useConsultations } from '../../contexts/ConsultationContext';
 import Loading from '../common/Loading';
+import ConsultationList from '../common/ConsultationList';
 import './dashboard.css';
 
 const Dashboard = () => {
@@ -14,6 +16,8 @@ const Dashboard = () => {
     isAuthenticated,
     loading: authLoading,
   } = useSelector((state) => state.auth);
+
+  const { consultations } = useConsultations();
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -358,24 +362,12 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
-                <div className="doctor-services">
-                  <strong>Services:</strong>
-                  <div className="services-list">
-                    {user?.services && user.services.length > 0 ? (
-                      user.services.slice(0, 3).map((service, index) => (
-                        <span key={index} className="service-tag">
-                          {service.name || service}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="no-services">No services listed</span>
-                    )}
-                    {user?.services && user.services.length > 3 && (
-                      <span className="service-tag more-services">
-                        +{user.services.length - 3} more
-                      </span>
-                    )}
-                  </div>
+                <div className="doctor-consultations">
+                  <ConsultationList
+                    consultations={consultations}
+                    maxItems={3}
+                    showTitle={true}
+                  />
                 </div>
               </div>
             </div>

@@ -1,9 +1,10 @@
 // src/components/Layout.js
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import SideBar from './sidebar/SideBar';
 import TopBar from './topbar/TopBar';
 import { Outlet } from 'react-router-dom';
+import Loader from './common/Loader';
 import './layout.css';
 
 const Layout = () => {
@@ -13,7 +14,9 @@ const Layout = () => {
       <main className="main-content">
         <TopBar />
         <div className="content-wrapper">
-          <Outlet />
+          <Suspense fallback={<Loader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

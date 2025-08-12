@@ -10,6 +10,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import { ScaleLoader } from 'react-spinners';
 import { useGetAllServicesQuery } from './../../store/slices';
+import { useConsultations } from '../../contexts/ConsultationContext';
+import ConsultationList from '../common/ConsultationList';
 // import MultipleSelect from './MultipleSelect';
 
 const Profile = () => {
@@ -39,6 +41,7 @@ const Profile = () => {
   const [photoPreviewUrl, setPreviewUrl] = useState('');
   const { user, error, loading } = useSelector((state) => state?.auth);
   const { data: servicesData, isLoading } = useGetAllServicesQuery({});
+  const { consultations } = useConsultations();
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -488,21 +491,12 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      {/* <div className="profile-services">
-                        <h5>Services</h5>
-                        <div className="services-tags">
-                          {profileData?.services &&
-                          profileData.services?.length ? (
-                            profileData.services?.map((service, index) => (
-                              <span className="service-tag" key={index}>
-                                {service.name}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="no-data">No services listed</span>
-                          )}
-                        </div>
-                      </div> */}
+                      <div className="profile-consultations">
+                        <ConsultationList
+                          consultations={consultations}
+                          showTitle={true}
+                        />
+                      </div>
 
                       <div className="profile-actions">
                         <button
