@@ -3,7 +3,7 @@
   "outputDirectory": "ui/build",
   "functions": {
     "api/index.js": {
-      "runtime": "@vercel/node@18.18.2",
+      "runtime": "nodejs18.x",
       "memory": 1024
     }
   },
