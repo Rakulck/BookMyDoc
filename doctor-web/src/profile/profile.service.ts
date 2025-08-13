@@ -4,7 +4,18 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';
 import { classToPlain } from 'class-transformer';
-import 'multer';
+
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
 
 @Injectable()
 export class ProfileService {
@@ -89,7 +100,7 @@ export class ProfileService {
   async updateProfile(
     userId: string,
     profileDto: ProfileDto,
-    file?: Express.Multer.File,
+    file?: MulterFile,
   ): Promise<IApiResponse<IUnsafeObject>> {
     try {
       let photoUrl = profileDto?.photoUrl;

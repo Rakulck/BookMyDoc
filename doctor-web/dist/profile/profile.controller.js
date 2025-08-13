@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProfileController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
-require("multer");
 const profile_service_1 = require("./profile.service");
 const profile_dto_1 = require("./dto/profile.dto");
 const roles_guard_1 = require("../auth/guard/roles.guard");
