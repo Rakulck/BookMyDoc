@@ -151,7 +151,7 @@ const Dashboard = () => {
   };
 
   if (!isAuthenticated) {
-    return <div>Please log in to view the dashboard.</div>;
+    return <div>Please log in to view the dashboard</div>;
   }
 
   if (bookingsLoading || availabilityLoading || authLoading) {
