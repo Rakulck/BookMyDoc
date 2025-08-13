@@ -9,6 +9,7 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import 'multer';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from './dto/profile.dto';
 import { RolesGuard } from '../auth/guard/roles.guard';

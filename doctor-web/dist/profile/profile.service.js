@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_service_1 = require("../firebase/firebase.service");
 const class_transformer_1 = require("class-transformer");
+require("multer");
 let ProfileService = class ProfileService {
     constructor(firebaseService) {
         this.firebaseService = firebaseService;

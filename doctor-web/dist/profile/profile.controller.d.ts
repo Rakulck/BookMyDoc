@@ -1,3 +1,4 @@
+import 'multer';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';

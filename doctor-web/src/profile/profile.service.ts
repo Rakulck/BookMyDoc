@@ -4,6 +4,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';
 import { classToPlain } from 'class-transformer';
+import 'multer';
 
 @Injectable()
 export class ProfileService {

@@ -1,6 +1,7 @@
 import { FirebaseService } from '../firebase/firebase.service';
 import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';
+import 'multer';
 export declare class ProfileService {
     private readonly firebaseService;
     constructor(firebaseService: FirebaseService);
