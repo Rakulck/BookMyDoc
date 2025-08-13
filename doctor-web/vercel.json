@@ -3,7 +3,7 @@
   "outputDirectory": "ui/build",
   "functions": {
     "api/index.js": {
-      "runtime": "@vercel/node@3.0.7",
+      "runtime": "nodejs18.x",
       "memory": 1024
     }
   },
@@ -34,8 +34,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "NODE_VERSION": "22.11.0"
+    "NODE_ENV": "production"
   },
   "buildCommand": "npm run build:production && npm run copy:api",
   "installCommand": "npm install && cd ui && npm install"
