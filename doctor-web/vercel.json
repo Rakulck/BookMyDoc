@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "outputDirectory": "ui/build",
   "functions": {
     "api/index.js": {
       "runtime": "@vercel/node@3.0.7",
@@ -21,15 +22,15 @@
     },
     {
       "src": "/static/(.*)",
-      "dest": "ui/build/static/$1"
+      "dest": "/static/$1"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map|json))",
-      "dest": "ui/build/$1"
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "ui/build/index.html"
+      "dest": "/index.html"
     }
   ],
   "env": {
