@@ -21,6 +21,7 @@
     "start:ui": "npm run start --prefix ui",
     "build:ui": "npm run build --prefix ui",
     "build:production": "npm run build:ui && npm run build",
+    "copy:api": "node -e \"const fs=require('fs');const path=require('path');if(!fs.existsSync('api'))fs.mkdirSync('api',{recursive:true});if(fs.existsSync('dist'))fs.cpSync('dist',path.join('api','dist'),{recursive:true});\"",
     "deploy:vercel": "npm run build:production && vercel --prod",
     "verify:build": "node -e \"const fs = require('fs'); console.log('UI build exists:', fs.existsSync('ui/build')); console.log('Backend dist exists:', fs.existsSync('dist'));\"",
     "test:ui": "npm run test --prefix ui",

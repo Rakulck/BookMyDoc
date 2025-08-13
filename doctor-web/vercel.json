@@ -1,7 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "dist/main.js": {
+    "api/index.js": {
       "runtime": "@vercel/node@3.0.7",
       "memory": 1024
     }
@@ -9,15 +9,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "dist/main.js"
+      "dest": "api/index.js"
     },
     {
       "src": "/health/(.*)",
-      "dest": "dist/main.js"
+      "dest": "api/index.js"
     },
     {
       "src": "/api-docs/(.*)",
-      "dest": "dist/main.js"
+      "dest": "api/index.js"
     },
     {
       "src": "/static/(.*)",
@@ -35,6 +35,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "npm run build:production",
+  "buildCommand": "npm run build:production && npm run copy:api",
   "installCommand": "npm install && cd ui && npm install"
 }
