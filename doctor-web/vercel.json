@@ -1,9 +1,6 @@
 {
   "version": 2,
   "outputDirectory": "ui/build",
-  "engines": {
-    "node": "18.x"
-  },
   "functions": {
     "api/index.js": {
       "runtime": "@vercel/node@2.15.10",
@@ -37,7 +34,8 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NODE_VERSION": "18.20.4"
   },
   "buildCommand": "npm run build:production && npm run copy:api",
   "installCommand": "npm install && cd ui && npm install"
