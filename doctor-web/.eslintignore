@@ -19,6 +19,9 @@ ui/node_modules/
 # Public assets
 ui/public/
 
+# Exclude entire UI directory to avoid conflicts
+ui/
+
 # Config files
 .eslintrc.js
 jest.config.js

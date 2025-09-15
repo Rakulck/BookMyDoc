@@ -1,5 +1,4 @@
 {
   "src/**/*.{js,ts,jsx,tsx}": "eslint --fix",
-  "ui/src/**/*.{js,ts,jsx,tsx}": "eslint --fix",
   "test/**/*.{js,ts}": "eslint --fix"
 }
