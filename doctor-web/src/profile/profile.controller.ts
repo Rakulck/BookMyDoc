@@ -11,7 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
 
-interface MulterFile {
+interface IMulterFile {
   fieldname: string;
   originalname: string;
   encoding: string;
@@ -98,7 +98,7 @@ export class ProfileController {
   async updateProfile(
     @Req() req: any,
     @Body() profileDto: ProfileDto,
-    @UploadedFile() file?: MulterFile,
+    @UploadedFile() file?: IMulterFile,
   ): Promise<IApiResponse<IUnsafeObject>> {
     const userId = req.user.uid;
     return this.profileService.updateProfile(userId, profileDto, file);
