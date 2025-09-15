@@ -1,6 +1,25 @@
+# Build outputs
 dist/
-node_modules/
+build/
+ui/build/
+ui/dist/
 coverage/
-*.js.map
-.env
-.env.* 
+.nyc_output/
+
+# Dependencies
+node_modules/
+ui/node_modules/
+
+# Generated files
+*.min.js
+*.min.ts
+*.bundle.js
+*.chunk.js
+
+# Public assets
+ui/public/
+
+# Config files
+.eslintrc.js
+jest.config.js
+webpack.config.js

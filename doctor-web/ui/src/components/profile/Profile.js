@@ -8,29 +8,28 @@ import {
 } from '../../store/slices/auth.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
-import { ScaleLoader } from 'react-spinners';
+import Loading from '../common/Loading';
 import { useGetAllServicesQuery } from './../../store/slices';
 import { useConsultations } from '../../contexts/ConsultationContext';
 import ConsultationList from '../common/ConsultationList';
-// import MultipleSelect from './MultipleSelect';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const [profileData, setProfileData] = useState(null); // State to store profile data
   const [isEditing, setIsEditing] = useState(false);
-  const [inputValue, setInputValue] = useState('');
+
   const [formFields, setFormFields] = useState({
-    display_name: '',
+    user_name: '',
     title: '',
-    hospital_name: '',
+    // hospital_name: '',
     expertiseList: [],
     experience: '',
     bio: '',
     photoUrl: '',
     phone: '',
     gender: '',
-    // services: [],
-    // servicesIds: [],
+    services: [],
+    servicesIds: [],
     location: {
       address: '',
       city: '',
@@ -53,26 +52,69 @@ const Profile = () => {
     }
 
     if (user && !error && !loading) {
-      setProfileData(user);
+      // Initialize empty expertiseList
+      let expertiseList = [];
+
+      // Handle different formats of expertiseList
+      if (user.expertiseList) {
+        if (Array.isArray(user.expertiseList)) {
+          expertiseList = user.expertiseList;
+        } else if (typeof user.expertiseList === 'string') {
+          try {
+            // Try parsing as JSON
+            const parsed = JSON.parse(user.expertiseList);
+            if (Array.isArray(parsed)) {
+              expertiseList = parsed;
+            } else if (parsed && typeof parsed === 'string') {
+              expertiseList = [parsed];
+            }
+          } catch {
+            // If not valid JSON, split by comma if it contains one
+            if (user.expertiseList.includes(',')) {
+              expertiseList = user.expertiseList.split(',');
+            } else {
+              // Single value
+              expertiseList = [user.expertiseList];
+            }
+          }
+        }
+      }
+
+      setProfileData({
+        ...user,
+        expertiseList: expertiseList,
+      });
+
       setFormFields({
-        display_name: user.display_name,
-        title: user.title,
-        hospital_name: user.hospital_name,
-        expertiseList: user.expertiseList,
-        experience: user.experience,
-        bio: user.bio,
+        user_name: user.user_name || '',
+        title: user.title || '',
+        expertiseList: expertiseList,
+        experience: user.experience || 0,
+        bio: user.bio || '',
         photoUrl: '',
-        phone: user.phone,
-        gender: user.gender,
-        services: servicesData,
+        phone: user.phone || '',
+        gender: user.gender || '',
+        services: user.services || [],
         location: {
-          address: user.location?.address,
-          city: user.location?.city,
-          state: user.location?.state,
-          country: user.location?.country,
+          address: user.location?.address || '',
+          city: user.location?.city || '',
+          state: user.location?.state || '',
+          country: user.location?.country || '',
         },
       });
-      setPreviewUrl(user?.photoUrl);
+      // Set preview URL, but use default avatar if photoUrl is empty, null, or the old placeholder
+      const photoUrl = user?.photoUrl;
+      const shouldUseDefaultAvatar =
+        !photoUrl || photoUrl === '' || photoUrl === '/placeholder.png';
+      const finalPhotoUrl = shouldUseDefaultAvatar
+        ? '/avatar-default.svg'
+        : photoUrl;
+      console.log('Profile photoUrl debug:', {
+        photoUrl,
+        shouldUseDefaultAvatar,
+        finalPhotoUrl,
+      });
+      setPreviewUrl(finalPhotoUrl);
     }
 
     if (servicesData) {
@@ -125,13 +167,18 @@ const Profile = () => {
     e.preventDefault();
     const formData = new FormData();
 
-    formData.append('display_name', String(formFields.display_name));
+    console.log('Form submission data:', {
+      formFields,
+      expertiseList: formFields.expertiseList,
+    });
+
+    formData.append('user_name', String(formFields.user_name));
     formData.append('title', String(formFields.title));
     formData.append('phone', String(formFields.phone));
     formData.append('gender', String(formFields.gender));
     formData.append('bio', String(formFields.bio));
     formData.append('experience', Number(formFields.experience));
-    formData.append('hospital_name', String(formFields.hospital_name));
+    // formData.append('hospital_name', String(formFields.hospital_name));
 
     if (formFields.location) {
       formData.append('location', JSON.stringify(formFields.location));
@@ -141,18 +188,34 @@ const Profile = () => {
       formData.append('services[]', item),
     );
 
-    formFields?.expertiseList?.forEach((item) =>
-      formData.append('expertiseList[]', item),
-    );
+    // Clean and prepare expertise list
+    let expertiseList = [];
+    if (formFields?.expertiseList) {
+      if (Array.isArray(formFields.expertiseList)) {
+        expertiseList = formFields.expertiseList
+          .map((item) => String(item).trim())
+          .filter((item) => item && item !== '[]' && item.length > 0);
+      } else if (typeof formFields.expertiseList === 'string') {
+        expertiseList = [formFields.expertiseList.trim()];
+      }
+    }
+
+    // Send as a single array
+    formData.append('expertiseList', JSON.stringify(expertiseList));
 
     if (formFields.photoUrl) {
       formData.append('file', formFields.photoUrl);
     }
 
     try {
-      dispatch(updateUserProfile(formData));
+      const response = await dispatch(updateUserProfile(formData)).unwrap();
+      console.log('Profile update response:', response);
 
-      setIsEditing(false);
+      if (response?.statusCode === 200) {
+        // Refresh profile data
+        await dispatch(fetchUserProfile());
+        setIsEditing(false);
+      }
     } catch (error) {
       console.error('Updating profile failed:', error);
       if (error?.statusCode === 400) {
@@ -163,34 +226,10 @@ const Profile = () => {
     }
   };
 
-  const addTag = (event) => {
-    if (event.key === 'Enter' && inputValue.trim() !== '') {
-      event.preventDefault();
-      // setTags([...tags, inputValue.trim()]);
-      setFormFields({
-        ...formFields,
-        expertiseList: formFields.expertiseList?.length
-          ? [...formFields.expertiseList, inputValue.trim()]
-          : [inputValue.trim()],
-      });
-      setInputValue('');
-    }
-  };
-
-  const removeTag = (indexToRemove) => {
-    // setTags(tags.filter((_, index) => index !== indexToRemove));
-    setFormFields({
-      ...formFields,
-      expertiseList: formFields.expertiseList.filter(
-        (_, index) => index !== indexToRemove,
-      ),
-    });
-  };
-
   if (loading || isLoading) {
     return (
       <div className="flex text-center justify-center">
-        <ScaleLoader size={150} color={'#18A0FB'} loading={loading} />
+        <Loading type="overlay" text="Loading profile..." />
       </div>
     );
   }
@@ -212,7 +251,12 @@ const Profile = () => {
                     <div className="profile-image-edit-section">
                       <div className="current-profile-image">
                         <img
-                          src={photoPreviewUrl || '/placeholder.png'}
+                          src={
+                            photoPreviewUrl &&
+                            photoPreviewUrl !== '/placeholder.png'
+                              ? photoPreviewUrl
+                              : '/avatar-default.svg'
+                          }
                           alt="Current profile"
                           className="edit-profile-image"
                         />
@@ -234,13 +278,13 @@ const Profile = () => {
 
                     <div className="form-row">
                       <div className="form-group">
-                        <label htmlFor="display_name">Full Name</label>
+                        <label htmlFor="user_name">Full Name</label>
                         <input
                           type="text"
                           className="form-control"
-                          id="display_name"
-                          name="display_name"
-                          value={formFields?.display_name || ''}
+                          id="user_name"
+                          name="user_name"
+                          value={formFields?.user_name || ''}
                           onChange={handleChange}
                           placeholder="Enter name"
                         />
@@ -317,54 +361,53 @@ const Profile = () => {
                         />
                       </div>
 
-                      <div className="form-group">
-                        <label htmlFor="hospital_name">
-                          Hospital/Clinic Name
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="hospital_name"
-                          name="hospital_name"
-                          value={formFields?.hospital_name || ''}
-                          onChange={handleChange}
-                          placeholder="Enter hospital or clinic name"
-                        />
-                      </div>
+                      {/* <div className="form-group">
+                          <label htmlFor="hospital_name">
+                            Hospital/Clinic Name
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="hospital_name"
+                            name="hospital_name"
+                            value={formFields?.hospital_name || ''}
+                            onChange={handleChange}
+                            placeholder="Enter hospital or clinic name"
+                          />
+                        </div> */}
                     </div>
 
                     <div className="form-group full-width">
                       <label htmlFor="expertiseList">Specialty/Expertise</label>
-                      <div className="tags-input-wrapper">
-                        <div className="tags">
-                          {Array.isArray(formFields?.expertiseList) &&
-                            formFields.expertiseList.map((tag, index) => (
-                              <div key={index} className="tag">
-                                {tag}
-                                <span
-                                  className="remove-tag"
-                                  onClick={() => removeTag(index)}
-                                >
-                                  x
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                        <input
-                          type="text"
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          onKeyDown={addTag}
-                          placeholder="Press enter to add tags"
-                          className="tagsInput"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="expertiseList"
+                        name="expertiseList"
+                        value={formFields?.expertiseList?.join(', ') || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Split by comma and clean up each tag
+                          const tags = value
+                            .split(',')
+                            .map((tag) => tag.trim())
+                            .filter((tag) => tag.length > 0);
+                          setFormFields((prev) => ({
+                            ...prev,
+                            expertiseList: tags,
+                          }));
+                        }}
+                        placeholder="Enter specialties separated by commas (e.g., Cardiologist, Pediatrician)"
+                      />
+                      <small className="form-text text-muted">
+                        Enter multiple specialties separated by commas
+                      </small>
                     </div>
 
                     {/* <div className="form-group full-width">
                       <MultipleSelect
                         data={servicesData || []}
-                        formFields={{ services: [] }}
+                        formFields={formFields}
                         handleChange={handleChange}
                       />
                     </div> */}
@@ -444,22 +487,37 @@ const Profile = () => {
                   <div className="profile-horizontal-layout">
                     <div className="profile-image-section">
                       <img
-                        src={photoPreviewUrl || '/placeholder.png'}
+                        src={
+                          photoPreviewUrl &&
+                          photoPreviewUrl !== '/placeholder.png'
+                            ? photoPreviewUrl
+                            : '/avatar-default.svg'
+                        }
                         alt="Doctor's profile"
                         className="profile-image"
+                        onError={(e) => {
+                          console.log('Image failed to load:', e.target.src);
+                          e.target.src = '/avatar-default.svg';
+                        }}
+                        onLoad={() =>
+                          console.log(
+                            'Image loaded successfully:',
+                            photoPreviewUrl,
+                          )
+                        }
                       />
                     </div>
                     <div className="profile-info-section">
                       <div className="profile-header">
                         <h2 className="profile-name">
-                          {profileData?.display_name}
+                          {profileData?.user_name}
                         </h2>
                         <h4 className="profile-title">{profileData?.title}</h4>
-                        {profileData?.hospital_name && (
+                        {/* {profileData?.hospital_name && (
                           <h5 className="profile-hospital">
                             {profileData?.hospital_name}
                           </h5>
-                        )}
+                        )} */}
                         <div className="profile-experience">
                           <span className="experience-badge">
                             {profileData?.experience}+ years experience

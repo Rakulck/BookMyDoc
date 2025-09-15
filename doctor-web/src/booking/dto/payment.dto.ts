@@ -55,8 +55,7 @@ export class CreatePaymentDto {
     description: 'The ID of the customer',
     example: 'cust456',
   })
-  @IsNotEmpty()
-  @IsOptional()
+  @IsNotEmpty({ message: 'Customer ID is required' })
   customer_id: string;
 
   @ApiProperty({ description: 'The ID of the doctor', example: 'doc789' })
@@ -68,4 +67,8 @@ export class CreatePaymentDto {
   @IsString()
   @IsNotEmpty()
   service_id: string;
+
+  @ApiPropertyOptional({ description: 'Service object for validation context' })
+  @IsOptional()
+  service?: any;
 }

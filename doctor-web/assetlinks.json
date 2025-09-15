@@ -4,9 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.app.BookMyDoctorAppointment",
-      "sha256_cert_fingerprints": [
-        "YOUR_APP_SHA256_CERTIFICATE_FINGERPRINT"
-      ]
+      "sha256_cert_fingerprints": ["YOUR_APP_SHA256_CERTIFICATE_FINGERPRINT"]
     }
   }
 ]

@@ -29,6 +29,15 @@ export class BookingService {
     this.logger = new Logger(this.constructor.name);
   }
 
+  private async getProfileData(userId: string) {
+    const fireStore = this.firebaseService.getFireStore();
+    const profileDoc = await fireStore
+      .collection(this.firebaseService.collections.profiles)
+      .doc(userId)
+      .get();
+    return profileDoc.data();
+  }
+
   async getBookings(filters: BookingFilterDto, userRole: IRole = IRole.ADMIN) {
     const fireStore = this.firebaseService.getFireStore();
     let bookingsRef: any = fireStore.collection(
@@ -196,8 +205,9 @@ export class BookingService {
       throw new HttpException('Doctor not found', HttpStatus.BAD_REQUEST);
     }
 
+    // Format date as ISO 8601 string with time
     const payloadDate = new Date(payload?.date);
-    const bookingDate = `${payloadDate.getFullYear()}-${+payloadDate.getMonth() + 1}-${payloadDate.getDate()}`;
+    const bookingDate = payloadDate.toISOString();
     let paymentStatus =
       user?.role === IRole.ADMIN && payload?.payment?.status
         ? payload?.payment?.status
@@ -231,7 +241,7 @@ export class BookingService {
       date: bookingDate,
       service_id: payload?.service_id,
       slot_id: payload?.slot_id,
-      status: IBookingStatus.PENDING,
+      status: 'confirmed',
       payment: {
         ephemeralId: payload?.payment?.ephemeralId || '',
         transaction_id: payload?.payment?.transaction_id || '',
@@ -240,7 +250,7 @@ export class BookingService {
         amount:
           user?.role === IRole.ADMIN && payload?.payment?.amount
             ? payload?.payment?.amount
-            : service?.price_amount || 0,
+            : service?.price || 0,
         status: paymentStatus,
       },
       history: {
@@ -296,19 +306,119 @@ export class BookingService {
 
     this.logger.log(createPayload, 'Booking Created');
 
-    // send booking notification
-    await this.firebaseNotification.sendNotificationByTopic(
-      createPayload.customer_id,
-      createPayload.doctor_id,
-      (receiver: IUnsafeObject<any>, sender: IUnsafeObject<any>) => {
-        return this.prepareBookingNotification(
-          receiver,
-          sender,
-          createPayload,
-          {},
-        );
-      },
+    // Get service data
+    const serviceDoc = await fireStore
+      .collection(this.firebaseService.collections.services)
+      .doc(createPayload.service_id)
+      .get();
+    const serviceData = serviceDoc.data();
+
+    // Prepare notification data for doctor
+    const doctorNotificationData = this.prepareBookingNotification(
+      await this.getProfileData(createPayload.doctor_id),
+      await this.getProfileData(createPayload.customer_id),
+      createPayload,
+      {},
     );
+
+    // Prepare notification data for customer
+    const customerNotificationData = this.prepareBookingNotification(
+      await this.getProfileData(createPayload.customer_id),
+      await this.getProfileData(createPayload.doctor_id),
+      createPayload,
+      {},
+    );
+
+    // Store notification for doctor
+    await fireStore.collection('notifications').add({
+      notification: {
+        title: 'New Appointment',
+        body:
+          doctorNotificationData.notification.body ||
+          'A new appointment has been booked',
+      },
+      type: 'booking_created',
+      read: false,
+      receiver: {
+        uid: createPayload.doctor_id,
+        name:
+          (await this.getProfileData(createPayload.doctor_id))?.user_name ||
+          'Doctor',
+        role: 'doctor',
+      },
+      sender: {
+        uid: createPayload.customer_id,
+        name:
+          (await this.getProfileData(createPayload.customer_id))?.user_name ||
+          'Patient',
+        role: 'customer',
+      },
+      context: {
+        booking_id: createPayload.booking_id,
+        payment_id: createPayload.payment?.transaction_id || '',
+        amount: createPayload.payment?.amount || 0,
+        service_name: serviceData?.name || 'Consultation',
+        date: createPayload.date || new Date().toISOString(),
+        actions: ['confirm', 'reschedule', 'cancel'],
+        type: 'booking_created',
+      },
+      createdAt: new Date().toISOString(),
+    });
+
+    // Store notification for customer
+    await fireStore.collection('notifications').add({
+      notification: {
+        title: 'Appointment Booked',
+        body:
+          customerNotificationData.notification.body ||
+          'Your appointment has been created',
+      },
+      type: 'booking_created',
+      read: false,
+      receiver: {
+        uid: createPayload.customer_id,
+        name:
+          (await this.getProfileData(createPayload.customer_id))?.user_name ||
+          'Patient',
+        role: 'customer',
+      },
+      sender: {
+        uid: createPayload.doctor_id,
+        name:
+          (await this.getProfileData(createPayload.doctor_id))?.user_name ||
+          'Doctor',
+        role: 'doctor',
+      },
+      context: {
+        booking_id: createPayload.booking_id,
+        payment_id: createPayload.payment?.transaction_id || '',
+        amount: createPayload.payment?.amount || 0,
+        service_name: serviceData?.name || 'Consultation',
+        date: createPayload.date || new Date().toISOString(),
+        actions: ['view_booking'],
+        type: 'booking_created',
+      },
+      createdAt: new Date().toISOString(),
+    });
+
+    // Send FCM notifications to both parties
+    try {
+      // Send to doctor
+      await this.firebaseNotification.sendNotificationByToken(
+        createPayload.doctor_id,
+        createPayload.customer_id,
+        () => doctorNotificationData,
+      );
+
+      // Send to customer
+      await this.firebaseNotification.sendNotificationByToken(
+        createPayload.customer_id,
+        createPayload.doctor_id,
+        () => customerNotificationData,
+      );
+    } catch (error) {
+      this.logger.error(`FCM notification failed: ${error}`, 'FCM Error');
+    }
 
     return true;
   }
@@ -359,7 +469,9 @@ export class BookingService {
     }
 
     const updatePayload = {
-      date: payload?.date || bookingData?.date,
+      date: payload?.date
+        ? new Date(payload.date).toISOString()
+        : bookingData?.date,
       service_id: payload?.service_id || bookingData?.service_id,
       slot_id: payload?.slot_id || bookingData?.slot_id,
       status: payload?.status || bookingData?.status,
@@ -411,13 +523,83 @@ export class BookingService {
       };
     }
 
-    if (payload?.slot_id) {
-      updatePayload.slot = fireStore.doc(
-        `${this.firebaseService.collections.availability_slots}/${updatePayload?.slot_id}`,
-      );
+    // Validate slot availability for reschedule
+    if (payload?.date || payload?.slot_id) {
+      // Get doctor's availability slots
+      const doctorDoc = await fireStore
+        .collection(this.firebaseService.collections.profiles)
+        .doc(bookingData.doctor_id)
+        .get();
+
+      const doctorData = doctorDoc.data();
+
+      // Parse availabilitySlots if it's stored as a string
+      let availabilitySlots = [];
+      try {
+        if (typeof doctorData?.availabilitySlots === 'string') {
+          availabilitySlots = JSON.parse(doctorData.availabilitySlots);
+        } else if (Array.isArray(doctorData?.availabilitySlots)) {
+          availabilitySlots = doctorData.availabilitySlots;
+        }
+      } catch (e) {
+        this.logger.error('Failed to parse availability slots', e);
+      }
+
+      // Get the day of week for the new date
+      const newDate = payload?.date
+        ? new Date(payload.date)
+        : new Date(bookingData.date);
+      const dayOfWeek = newDate
+        .toLocaleDateString('en-US', { weekday: 'long' })
+        .toLowerCase();
+
+      // Check if the doctor has slots on this day
+      const hasSlotOnDay =
+        Array.isArray(availabilitySlots) &&
+        availabilitySlots.some(
+          (slot) => slot?.day?.toLowerCase() === dayOfWeek,
+        );
+
+      if (!hasSlotOnDay) {
+        throw new HttpException(
+          'No availability slots found for selected date',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // If slot_id is provided, validate it exists
+      if (payload?.slot_id) {
+        const slotDoc = await fireStore
+          .collection(this.firebaseService.collections.availability_slots)
+          .doc(payload.slot_id)
+          .get();
+
+        if (!slotDoc.exists) {
+          throw new HttpException(
+            'Selected slot is not available',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        updatePayload.slot = fireStore.doc(
+          `${this.firebaseService.collections.availability_slots}/${payload.slot_id}`,
+        );
+      }
     }
 
     if (payload?.service_id) {
+      const serviceDoc = await fireStore
+        .collection(this.firebaseService.collections.services)
+        .doc(payload.service_id)
+        .get();
+
+      if (!serviceDoc.exists) {
+        throw new HttpException(
+          'Selected service is not available',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       updatePayload.service = fireStore.doc(
         `${this.firebaseService.collections.services}/${updatePayload?.service_id}`,
       );
@@ -432,19 +614,232 @@ export class BookingService {
 
     this.logger.log(updatePayload, 'Booking Updated');
 
-    // send booking notification
-    await this.firebaseNotification.sendNotificationByToken(
-      bookingData.customer_id,
-      bookingData.doctor_id,
-      (receiver: IUnsafeObject<any>, sender: IUnsafeObject<any>) => {
-        return this.prepareBookingNotification(
-          receiver,
-          sender,
-          updatePayload,
-          bookingData,
-        );
-      },
+    // Determine who to notify based on who made the change
+    let receiverId, senderId;
+
+    this.logger.log(
+      `User making update: ${JSON.stringify({ uid: user?.uid, role: user?.role, name: user?.name })}`,
+      'Update User Info',
     );
+    this.logger.log(
+      `Booking data: ${JSON.stringify({ customer_id: bookingData.customer_id, doctor_id: bookingData.doctor_id })}`,
+      'Booking Info',
+    );
+
+    if (user?.role === 'doctor' || user?.uid === bookingData.doctor_id) {
+      // Doctor is updating, notify customer
+      receiverId = bookingData.customer_id;
+      senderId = bookingData.doctor_id;
+      this.logger.log(
+        'Notifying customer (doctor made update)',
+        'Notification Direction',
+      );
+    } else {
+      // Customer is updating, notify doctor
+      receiverId = bookingData.doctor_id;
+      senderId = bookingData.customer_id;
+      this.logger.log(
+        'Notifying doctor (customer made update)',
+        'Notification Direction',
+      );
+    }
+
+    // Get profile data
+    const receiverProfile = await this.getProfileData(receiverId);
+    const senderProfile = await this.getProfileData(senderId);
+
+    this.logger.log(
+      `Receiver profile: ${JSON.stringify({ uid: receiverProfile?.uid, user_name: receiverProfile?.user_name, role: receiverProfile?.role })}`,
+      'Receiver Info',
+    );
+    this.logger.log(
+      `Sender profile: ${JSON.stringify({ uid: senderProfile?.uid, user_name: senderProfile?.user_name, role: senderProfile?.role })}`,
+      'Sender Info',
+    );
+
+    // Prepare notification data
+    const notificationData = this.prepareBookingNotification(
+      receiverProfile,
+      senderProfile,
+      updatePayload,
+      bookingData,
+    );
+
+    this.logger.log(
+      `Notification data: ${JSON.stringify(notificationData)}`,
+      'Notification Data',
+    );
+
+    // Get service data
+    const serviceDoc = await fireStore
+      .collection(this.firebaseService.collections.services)
+      .doc(
+        (updatePayload.service_id as string) ||
+          (bookingData.service_id as string),
+      )
+      .get();
+    const serviceData = serviceDoc.data();
+
+    // Store notification in Firestore for the receiver
+    await fireStore.collection('notifications').add({
+      notification: {
+        title: 'Appointment Update',
+        body:
+          notificationData.notification.body ||
+          'Your appointment has been updated',
+      },
+      type: notificationData.context.type || 'booking_updated',
+      read: false,
+      receiver: {
+        uid: receiverId,
+        name:
+          (await this.getProfileData(receiverId))?.user_name ||
+          (user?.role === 'doctor' ? 'Patient' : 'Doctor'),
+        role: user?.role === 'doctor' ? 'customer' : 'doctor',
+      },
+      sender: {
+        uid: senderId,
+        name:
+          (await this.getProfileData(senderId))?.user_name ||
+          (user?.role === 'doctor' ? 'Doctor' : 'Patient'),
+        role: user?.role || 'customer',
+      },
+      context: {
+        booking_id: bookingData.booking_id,
+        payment_id:
+          (updatePayload.payment as any)?.transaction_id ||
+          (bookingData.payment as any)?.transaction_id ||
+          '',
+        amount:
+          (updatePayload.payment as any)?.amount ||
+          (bookingData.payment as any)?.amount ||
+          0,
+        service_name: serviceData?.name || 'Consultation',
+        date:
+          updatePayload.date || bookingData.date || new Date().toISOString(),
+        actions: notificationData.context.actions || ['view_booking'],
+        type: notificationData.context.type || 'booking_updated',
+      },
+      createdAt: new Date().toISOString(),
+    });
+
+    // Also send notification to the other party (if status changed)
+    if (bookingData?.status !== updatePayload.status) {
+      const otherPartyId =
+        user?.role === 'doctor'
+          ? bookingData.customer_id
+          : bookingData.doctor_id;
+      const otherPartyNotificationData = this.prepareBookingNotification(
+        await this.getProfileData(otherPartyId),
+        await this.getProfileData(senderId),
+        { ...bookingData, ...updatePayload },
+        bookingData,
+      );
+
+      await fireStore.collection('notifications').add({
+        notification: {
+          title: 'Appointment Status Update',
+          body:
+            otherPartyNotificationData.notification.body ||
+            'Your appointment status has been updated',
+        },
+        type: 'booking_status_updated',
+        read: false,
+        receiver: {
+          uid: otherPartyId,
+          name:
+            (await this.getProfileData(otherPartyId))?.user_name ||
+            (user?.role === 'doctor' ? 'Patient' : 'Doctor'),
+          role: user?.role === 'doctor' ? 'customer' : 'doctor',
+        },
+        sender: {
+          uid: senderId,
+          name:
+            (await this.getProfileData(senderId))?.user_name ||
+            (user?.role === 'doctor' ? 'Doctor' : 'Patient'),
+          role: user?.role || 'customer',
+        },
+        context: {
+          booking_id: bookingData.booking_id,
+          payment_id:
+            (updatePayload.payment as any)?.transaction_id ||
+            (bookingData.payment as any)?.transaction_id ||
+            '',
+          amount:
+            (updatePayload.payment as any)?.amount ||
+            (bookingData.payment as any)?.amount ||
+            0,
+          service_name: serviceData?.name || 'Consultation',
+          date:
+            updatePayload.date || bookingData.date || new Date().toISOString(),
+          actions: otherPartyNotificationData.context.actions || [
+            'view_booking',
+          ],
+          type: 'booking_status_updated',
+        },
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // Also create a confirmation notification for the sender (doctor/customer who made the change)
+    if (user?.role === 'doctor') {
+      // Doctor made the change, create confirmation notification for doctor
+
+      await fireStore.collection('notifications').add({
+        notification: {
+          title: 'Action Confirmation',
+          body: `You ${updatePayload.date !== bookingData.date ? 'rescheduled' : 'updated'} the appointment for ${(await this.getProfileData(receiverId))?.user_name}`,
+        },
+        type: 'action_confirmation',
+        read: false,
+        receiver: {
+          uid: senderId, // Doctor receives confirmation
+          name: (await this.getProfileData(senderId))?.user_name || 'Doctor',
+          role: 'doctor',
+        },
+        sender: {
+          uid: senderId, // Doctor is sender of confirmation
+          name: (await this.getProfileData(senderId))?.user_name || 'Doctor',
+          role: 'doctor',
+        },
+        context: {
+          booking_id: bookingData.booking_id,
+          payment_id:
+            (updatePayload.payment as any)?.transaction_id ||
+            (bookingData.payment as any)?.transaction_id ||
+            '',
+          amount:
+            (updatePayload.payment as any)?.amount ||
+            (bookingData.payment as any)?.amount ||
+            0,
+          service_name: serviceData?.name || 'Consultation',
+          date:
+            updatePayload.date || bookingData.date || new Date().toISOString(),
+          actions: ['view_booking'],
+          type: 'action_confirmation',
+        },
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // Send FCM notification
+    this.logger.log(
+      `Sending FCM notification to: ${receiverId} from: ${senderId}`,
+      'FCM Notification',
+    );
+    try {
+      await this.firebaseNotification.sendNotificationByToken(
+        receiverId,
+        senderId,
+        () => notificationData,
+      );
+      this.logger.log('FCM notification sent successfully', 'FCM Success');
+    } catch (error) {
+      this.logger.error(
+        `FCM notification failed: ${(error as Error).message}`,
+        'FCM Error',
+      );
+    }
 
     return true;
   }
@@ -518,10 +913,24 @@ export class BookingService {
         ? doctorProfile?.ratings
         : [];
       ratingsData.push(payload?.rating);
+
+      // Calculate average rating
+      const totalRatings = ratingsData.length;
+      const sumRatings = ratingsData.reduce((sum, rating) => sum + rating, 0);
+      const averageRating =
+        totalRatings > 0 ? (sumRatings / totalRatings).toFixed(1) : '0';
+
       await fireStore
         .collection(this.firebaseService.collections.profiles)
         .doc(bookingData.doctor_id)
-        .set({ ratings: ratingsData }, { merge: true });
+        .set(
+          {
+            ratings: ratingsData,
+            total_ratings: totalRatings,
+            average_rating: parseFloat(averageRating),
+          },
+          { merge: true },
+        );
     }
 
     this.logger.log('Booking Rated', updatePayload);
@@ -539,48 +948,99 @@ export class BookingService {
       ...currentData,
     };
     let actions = [];
-    if (
-      [IBookingStatus.PENDING, IBookingStatus.CONFIRMED].includes(
-        currentData?.status,
-      )
-    ) {
+    if (currentData?.status === IBookingStatus.CONFIRMED) {
       actions = ['reschedule', 'cancel'];
     }
-    if ([IBookingStatus.CANCELED].includes(currentData?.status)) {
+    if (currentData?.status === IBookingStatus.CANCELED) {
       actions = ['reschedule'];
     }
-    if ([IBookingStatus.COMPLETED].includes(currentData?.status)) {
+    if (currentData?.status === IBookingStatus.COMPLETED) {
       actions = ['rate'];
     }
 
-    const action_type = oldData?.booking_id ? 'Updated' : 'Created';
-    let title = `Booking ${action_type}`;
-    let body = `${receiver?.display_name} your booking with ${sender?.display_name} has been ${action_type.toLocaleLowerCase()}`;
+    // Format date for display (e.g., "Aug 23, 2025")
+    const formatDate = (dateStr) => {
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+      } catch (err) {
+        return dateStr;
+      }
+    };
 
+    let body = '';
+
+    // Check if it's a reschedule (date or slot changed) - only if oldData has actual data
     if (
-      oldData?.date !== currentData.date ||
-      oldData?.slot_id !== currentData.slot_id
+      oldData?.date &&
+      oldData?.slot_id && // Only check if oldData has actual booking data
+      (oldData?.date !== currentData.date ||
+        oldData?.slot_id !== currentData.slot_id)
     ) {
-      title = `Booking Schedule ${action_type}`;
-      body = `${receiver?.display_name} your booking with ${sender?.display_name} has been rescheduled to ${currentData?.date}`;
+      // Determine who initiated the reschedule based on sender role
+      if (receiver?.role === 'customer') {
+        // Doctor rescheduled, customer receives notification
+        body = `Dr. ${sender?.user_name} rescheduled your appointment to ${formatDate(currentData?.date)}`;
+      } else {
+        // Customer rescheduled, doctor receives notification
+        body = `${sender?.user_name} rescheduled their appointment to ${formatDate(currentData?.date)}`;
+      }
     }
-    if (oldData?.status !== currentData.status) {
-      title = `Booking Status ${action_type}`;
-      body =
-        currentData.status === IBookingStatus.COMPLETED
-          ? `${receiver?.display_name} your booking with ${sender?.display_name} has been ${currentData?.status}. Please let us know how the check-up went.`
-          : `${receiver?.display_name} your booking with ${sender?.display_name} on ${currentData?.date} has been ${currentData?.status}.`;
+    // Check if status changed (but not for new bookings)
+    else if (oldData?.status && oldData?.status !== currentData.status) {
+      switch (currentData.status) {
+        case IBookingStatus.COMPLETED:
+          if (receiver?.role === 'customer') {
+            body = `Your appointment with Dr. ${sender?.user_name} has been completed`;
+          } else {
+            body = `Appointment with ${sender?.user_name} has been completed`;
+          }
+          break;
+
+        case IBookingStatus.CONFIRMED:
+          if (receiver?.role === 'doctor') {
+            body = `${sender?.user_name} booked an appointment with you for ${formatDate(currentData?.date)}`;
+          } else {
+            body = `Your appointment with Dr. ${sender?.user_name} for ${formatDate(currentData?.date)} has been confirmed`;
+          }
+          break;
+        case IBookingStatus.CANCELED:
+          if (receiver?.role === 'customer') {
+            body = `Dr. ${sender?.user_name} cancelled your appointment for ${formatDate(currentData?.date)}`;
+          } else {
+            body = `${sender?.user_name} cancelled their appointment for ${formatDate(currentData?.date)}`;
+          }
+          break;
+        default:
+          // For new bookings (no status change)
+          if (receiver?.role === 'doctor') {
+            body = `${sender?.user_name} booked an appointment with you for ${formatDate(currentData?.date)}`;
+          } else {
+            body = `You booked an appointment with Dr. ${sender?.user_name} for ${formatDate(currentData?.date)}`;
+          }
+      }
+    } else {
+      // For new bookings (no oldData, so it's a new booking)
+      if (receiver?.role === 'doctor') {
+        body = `${sender?.user_name} booked an appointment with you for ${formatDate(currentData?.date)}`;
+      } else {
+        body = `You booked an appointment with Dr. ${sender?.user_name} for ${formatDate(currentData?.date)}`;
+      }
     }
     return {
       notification: {
-        title,
         body,
       },
       context: {
         booking_id: currentData?.booking_id,
         doctor_id: currentData?.doctor_id,
         customer_id: currentData?.customer_id,
-        type: `booking_${action_type.toLocaleLowerCase()}`,
+        service_name: currentData?.service?.name,
+        type: `booking_${currentData?.status.toLocaleLowerCase()}`,
         actions,
       },
     };
@@ -676,27 +1136,62 @@ export class BookingService {
       throw new HttpException('Customer not found', HttpStatus.BAD_REQUEST);
     }
 
-    const service = (
-      await fireStore
-        .collection(this.firebaseService.collections.services)
-        .doc(payload?.service_id)
-        .get()
-    ).data();
-    if (!service) {
+    console.log('Looking for service by doc ID:', {
+      doc_id: payload?.service_id,
+      collection: 'services',
+    });
+
+    // Get service directly by document ID
+    const serviceDoc = await fireStore
+      .collection('services')
+      .doc(payload?.service_id)
+      .get();
+
+    console.log('Service lookup result:', {
+      exists: serviceDoc.exists,
+      id: serviceDoc.id,
+      data: serviceDoc.data(),
+    });
+
+    if (!serviceDoc.exists) {
       throw new HttpException('Service not found', HttpStatus.BAD_REQUEST);
+    }
+
+    const service = serviceDoc.data();
+    if (!service) {
+      throw new HttpException(
+        'Service data is invalid',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const paymentInstance = new Razorpay({
       key_id: process.env.RAZORPAY_API_KEY,
       key_secret: process.env.RAZORPAY_API_SECRET,
     });
+    // Get price from either price_amount or price field
+    const price = service?.price_amount || service?.price;
+    if (!price) {
+      throw new HttpException(
+        'Service price is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    console.log('Creating Razorpay order:', {
+      price,
+      service_details: service,
+      customer: profile.uid,
+      doctor: payload?.doctor_id,
+    });
+
     const result: any = await paymentInstance.orders.create({
-      amount: +service?.price_amount * 100,
+      amount: +price * 100, // Convert to paise
       currency: 'INR',
       receipt: profile.uid,
       partial_payment: false,
       notes: {
-        serviceId: service?.service_id,
+        serviceId: service?.service_id || serviceDoc.id, // Use either service_id field or document ID
         customerId: profile.uid,
         doctorId: payload?.doctor_id,
       },
@@ -711,26 +1206,35 @@ export class BookingService {
     }
     this.logger.log(result, 'Payment order result');
 
+    console.log('Razorpay order created:', {
+      order_id: result?.id,
+      amount: result?.amount,
+      service_name: service?.name,
+      customer: profile?.display_name,
+    });
+
     return {
       key: process.env.RAZORPAY_API_KEY,
       order_id: result?.id,
-      name: process.env.APP_NAME,
+      name: process.env.APP_NAME || 'Doctor Appointment',
       amount: result?.amount,
-      currency: result?.currency,
-      description: service?.name,
+      currency: result?.currency || 'INR',
+      description: service?.name || 'Medical Consultation',
       prefill: {
-        email: profile?.email,
-        contact: profile?.phone,
-        name: profile?.display_name,
+        email: profile?.email || '',
+        contact: profile?.phone || '',
+        name: profile?.display_name || '',
       },
       theme: {
         color: '#18A0FB',
       },
       notes: {
         orderId: result?.id,
-        serviceId: service?.service_id,
+        serviceId: service?.service_id || serviceDoc.id,
         customerId: profile.uid,
         doctorId: payload?.doctor_id,
+        serviceName: service?.name,
+        servicePrice: price,
       },
     };
   }

@@ -866,7 +866,9 @@ const AuthSlice = createSlice({
         state.user = {
           ...placeholderData,
           ...actionData,
-          services: [...placeholderData?.services],
+          services: actionData?.services || placeholderData?.services || [],
+          expertiseList:
+            actionData?.expertiseList || placeholderData?.expertiseList || [],
         };
         state.error = null;
       })

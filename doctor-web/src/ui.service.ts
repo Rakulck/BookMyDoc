@@ -9,6 +9,12 @@ import { existsSync } from 'node:fs';
 @Injectable()
 export class UiService implements ServeStaticModuleOptionsFactory {
   createLoggerOptions(): ServeStaticModuleOptions[] {
+    // Don't serve UI if SERVE_UI is set to false
+    if (process.env.SERVE_UI === 'false') {
+      console.log('UI serving disabled by SERVE_UI environment variable');
+      return [];
+    }
+
     // Try different possible paths for the UI build directory
     const possiblePaths = [
       join(__dirname, '..', 'ui', 'build'), // Default path

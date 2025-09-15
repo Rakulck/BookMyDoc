@@ -3,7 +3,7 @@ import { Container, Nav, Tab, Card } from 'react-bootstrap';
 import './Bookings.css';
 import { ToastContainer } from 'react-toastify';
 import BookingCard from './BookingCard';
-import Loader from './../common/Loader';
+import Loading from './../common/Loading';
 import { useGetBookingsQuery } from './../../store/slices';
 
 const Bookings = () => {
@@ -11,7 +11,6 @@ const Bookings = () => {
   const [bookings, setBookings] = useState({
     all: [],
     upcoming: [],
-    pending: [],
     completed: [],
     canceled: [],
   });
@@ -20,13 +19,11 @@ const Bookings = () => {
   useEffect(() => {
     if (data) {
       const upcoming = data.filter((item) => item?.status === 'confirmed');
-      const pending = data.filter((item) => item?.status === 'pending');
       const completed = data.filter((item) => item?.status === 'completed');
       const canceled = data.filter((item) => item?.status === 'canceled');
       setBookings({
         all: data,
         upcoming,
-        pending,
         completed,
         canceled,
       });
@@ -47,12 +44,6 @@ const Bookings = () => {
       data: bookings?.upcoming,
     },
     {
-      key: 'unconfirmed',
-      label: 'Unconfirmed',
-      count: bookings?.pending?.length || 0,
-      data: bookings?.pending,
-    },
-    {
       key: 'past',
       label: 'Completed',
       count: bookings?.completed?.length || 0,
@@ -70,7 +61,9 @@ const Bookings = () => {
     <div id="booking" className="bookings-container">
       <Container fluid className="bookings-wrapper">
         <ToastContainer />
-        <Loader loading={isLoading || isFetching} />
+        {(isLoading || isFetching) && (
+          <Loading type="overlay" text="Loading Appointments..." />
+        )}
 
         {/* Main Content */}
         <div className="bookings-content">
@@ -101,12 +94,9 @@ const Bookings = () => {
                 {tabData.map((tab) => (
                   <Tab.Pane key={tab.key} eventKey={tab.key}>
                     <div className="bookings-section">
-                      <div className="section-header">
-                        <h3 className="section-title">{tab.label} Bookings</h3>
-                        <span className="section-count">
-                          {tab.count} appointments
-                        </span>
-                      </div>
+                      {/* <div className="section-header">
+                        <h3 className="section-title">{tab.label}</h3>
+                      </div> */}
                       <div className="bookings-grid">
                         {tab.data && tab.data.length > 0 ? (
                           tab.data.map((booking) => (
@@ -137,11 +127,13 @@ const NoBookingsMessage = ({ title }) => (
   <Card className="no-bookings-card">
     <Card.Body className="no-bookings-body">
       <div className="no-bookings-icon">📅</div>
-      <Card.Title className="no-bookings-title">No {title} bookings</Card.Title>
+      <Card.Title className="no-bookings-title">
+        No appointments found
+      </Card.Title>
       <Card.Text className="no-bookings-text">
         {title === 'all'
-          ? 'You have no bookings yet. Start by creating your availability.'
-          : `You have no ${title} bookings. As soon as someone books a time with you it will show up here.`}
+          ? 'Create your availability to start accepting bookings'
+          : 'New appointments will appear here'}
       </Card.Text>
     </Card.Body>
   </Card>

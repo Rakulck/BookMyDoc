@@ -8,6 +8,39 @@ export const formatTime = (time) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 };
 
+export const formatDate = (dateString) => {
+  if (!dateString) {
+    return '';
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return dateString; // Return original if invalid date
+    }
+
+    // Format as YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    // Get day name
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    const dayName = dayNames[date.getDay()];
+
+    return `${year}-${month}-${day}, ${dayName}`;
+  } catch (error) {
+    return dateString; // Return original if error
+  }
+};
+
 export const isExpireDate = (bookingDate) => {
   const now = new Date();
   const today = new Date(

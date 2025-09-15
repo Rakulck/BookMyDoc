@@ -33,7 +33,7 @@ export class ServiceDto {
   type: string;
 
   @ApiProperty({ description: 'The price of the service', example: 100 })
-  price_amount: number | string;
+  price: number | string;
 }
 
 export class BookingDto {

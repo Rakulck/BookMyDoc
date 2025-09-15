@@ -5,7 +5,7 @@ import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';
 import { classToPlain } from 'class-transformer';
 
-interface MulterFile {
+interface IMulterFile {
   fieldname: string;
   originalname: string;
   encoding: string;
@@ -74,6 +74,7 @@ export class ProfileService {
       const profileDataWithServices = {
         ...profileData,
         services,
+        expertiseList: profileData.expertiseList || [],
       };
 
       return {
@@ -100,7 +101,7 @@ export class ProfileService {
   async updateProfile(
     userId: string,
     profileDto: ProfileDto,
-    file?: MulterFile,
+    file?: IMulterFile,
   ): Promise<IApiResponse<IUnsafeObject>> {
     try {
       let photoUrl = profileDto?.photoUrl;
@@ -145,17 +146,12 @@ export class ProfileService {
         }
       }
 
-      // Ensure expertiseList and services are arrays
-      if (
-        profileDto.expertiseList &&
-        typeof profileDto.expertiseList === 'string'
-      ) {
-        try {
-          updatedProfile.expertiseList = JSON.parse(profileDto.expertiseList);
-        } catch (error) {
-          console.error('Error parsing expertiseList:', error);
-          throw new Error('Invalid expertiseList format');
-        }
+      // expertiseList is already handled by the DTO Transform decorator
+      if (profileDto.expertiseList) {
+        updatedProfile.expertiseList = Array.isArray(profileDto.expertiseList)
+          ? profileDto.expertiseList
+          : [];
+        console.log('Updated expertiseList:', updatedProfile.expertiseList);
       }
 
       if (profileDto.services && typeof profileDto.services === 'string') {

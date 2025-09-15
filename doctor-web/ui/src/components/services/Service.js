@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useConsultations } from '../../contexts/ConsultationContext';
+import { toast } from 'react-toastify';
+import Loading from '../common/Loading';
 import './Service.css';
 
 const Service = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingService, setEditingService] = useState(null);
   const [newConsultation, setNewConsultation] = useState({
     name: '',
     duration: '',
@@ -11,50 +15,126 @@ const Service = () => {
     description: '',
   });
 
-  const { consultations, addConsultation } = useConsultations();
-
-  // Only show custom consultations
-  const consultationTypes = consultations;
+  const {
+    consultations,
+    addConsultation,
+    removeConsultation,
+    updateConsultation,
+  } = useConsultations();
 
   const handleCreateConsultation = () => {
     setShowCreateForm(true);
   };
 
-  const handleSaveConsultation = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const handleSaveConsultation = async () => {
     if (
       newConsultation.name &&
       newConsultation.duration &&
       newConsultation.price
     ) {
-      // Create new consultation with unique ID
-      const newConsultationItem = {
-        id: Date.now(), // Simple ID generation
-        name: newConsultation.name,
-        duration: newConsultation.duration,
-        price: parseInt(newConsultation.price),
-        description: newConsultation.description || 'Custom consultation type',
-        features: ['Custom consultation', 'Professional medical advice'],
-        isCustom: true,
-      };
+      try {
+        setIsLoading(true);
+        // Create new consultation
+        const newConsultationItem = {
+          name: newConsultation.name,
+          duration: newConsultation.duration,
+          price: parseInt(newConsultation.price),
+          description:
+            newConsultation.description || 'Custom consultation type',
+        };
 
-      // Add to consultations context
-      addConsultation(newConsultationItem);
+        // Add to consultations context (which now saves to Firebase)
+        await addConsultation(newConsultationItem);
 
-      // Reset form
-      setNewConsultation({
-        name: '',
-        duration: '',
-        price: '',
-        description: '',
-      });
-      setShowCreateForm(false);
-
-      console.log('Created new consultation:', newConsultationItem);
+        // Reset form
+        setNewConsultation({
+          name: '',
+          duration: '',
+          price: '',
+          description: '',
+        });
+        setShowCreateForm(false);
+        toast.success('Consultation service created successfully!');
+      } catch (error) {
+        toast.error('Failed to create consultation service. Please try again.');
+        console.error('Error creating consultation:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      toast.error('Please fill in all required fields');
     }
   };
 
   const handleInputChange = (field, value) => {
     setNewConsultation((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditConsultation = (service) => {
+    setEditingService(service);
+    setNewConsultation({
+      name: service.name,
+      duration: service.duration,
+      price: service.price.toString(),
+      description: service.description,
+    });
+    setShowEditForm(true);
+  };
+
+  const handleUpdateConsultation = async () => {
+    if (
+      newConsultation.name &&
+      newConsultation.duration &&
+      newConsultation.price
+    ) {
+      try {
+        setUpdatingId(editingService.id);
+        // Update consultation
+        const updatedConsultationItem = {
+          name: newConsultation.name,
+          duration: newConsultation.duration,
+          price: parseInt(newConsultation.price),
+          description:
+            newConsultation.description || 'Custom consultation type',
+        };
+
+        // Update consultation
+        await updateConsultation(editingService.id, updatedConsultationItem);
+
+        // Reset form and close modal
+        setNewConsultation({
+          name: '',
+          duration: '',
+          price: '',
+          description: '',
+        });
+        setEditingService(null);
+        setShowEditForm(false);
+        toast.success('Consultation service updated successfully!');
+      } catch (error) {
+        toast.error('Failed to update consultation service. Please try again.');
+        console.error('Error updating consultation:', error);
+      } finally {
+        setUpdatingId(null);
+      }
+    } else {
+      toast.error('Please fill in all required fields');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditForm(false);
+    setEditingService(null);
+    setNewConsultation({
+      name: '',
+      duration: '',
+      price: '',
+      description: '',
+    });
   };
 
   return (
@@ -65,55 +145,77 @@ const Service = () => {
         <button
           className="create-consultation-btn"
           onClick={handleCreateConsultation}
+          disabled={isLoading}
         >
-          + Create New Consultation Type
+          {isLoading ? 'Creating...' : '+ Create New Consultation Type'}
         </button>
       </div>
 
-      <div className="services-grid">
-        {(consultationTypes || []).map((service) => (
-          <div
-            key={service.id}
-            className={`service-card ${service.popular ? 'popular' : ''}`}
-          >
-            {service.popular && (
-              <div className="popular-badge">Most Popular</div>
-            )}
+      {isLoading && (
+        <Loading type="overlay" text="Loading consultation services..." />
+      )}
+      {!isLoading && (
+        <div className="services-grid">
+          {(consultations || []).map((service) => (
+            <div key={service.id} className={`service-card`}>
+              <div className="service-header">
+                <h3>{service.name}</h3>
+                <div className="service-type">
+                  <span>{service.duration}</span>
+                </div>
+              </div>
 
-            <div className="service-header">
-              <h3>{service.name}</h3>
-              <div className="service-duration">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              <div className="service-price">
+                <span className="currency">₹</span>
+                <span className="amount">{service.price}</span>
+              </div>
+
+              <div className="service-description">
+                <p>{service.description}</p>
+              </div>
+
+              <div className="service-actions">
+                <button
+                  className="btn btn-primary edit-btn"
+                  onClick={() => handleEditConsultation(service)}
+                  disabled={
+                    isLoading ||
+                    deletingId === service.id ||
+                    updatingId === service.id
+                  }
                 >
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{service.duration}</span>
+                  Edit
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={async () => {
+                    try {
+                      setDeletingId(service.id);
+                      await removeConsultation(service.id);
+                      toast.success('Service deleted successfully');
+                    } catch (error) {
+                      toast.error('Failed to delete service');
+                    } finally {
+                      setDeletingId(null);
+                    }
+                  }}
+                  disabled={
+                    isLoading ||
+                    deletingId === service.id ||
+                    updatingId === service.id
+                  }
+                >
+                  {deletingId === service.id ? (
+                    <Loading type="inline" size="small" text="Deleting..." />
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
               </div>
             </div>
-
-            <div className="service-price">
-              <span className="currency">₹</span>
-              <span className="amount">{service.price}</span>
-            </div>
-
-            <div className="service-description">
-              <p>{service.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Create New Consultation Modal */}
       {showCreateForm && (
@@ -194,10 +296,106 @@ const Service = () => {
                   disabled={
                     !newConsultation.name ||
                     !newConsultation.duration ||
-                    !newConsultation.price
+                    !newConsultation.price ||
+                    isLoading
                   }
                 >
-                  Create Consultation
+                  {isLoading ? (
+                    <Loading type="inline" size="small" text="Creating..." />
+                  ) : (
+                    'Create Consultation'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Consultation Modal */}
+      {showEditForm && (
+        <div className="booking-modal-overlay">
+          <div className="booking-modal">
+            <div className="modal-header">
+              <h3>Edit Consultation Type</h3>
+              <button className="close-modal" onClick={handleCancelEdit}>
+                ×
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="create-form">
+                <div className="form-group">
+                  <label htmlFor="edit-consultation-name">
+                    Consultation Name
+                  </label>
+                  <input
+                    id="edit-consultation-name"
+                    type="text"
+                    placeholder="e.g., Quick Consultation"
+                    value={newConsultation.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-consultation-duration">Duration</label>
+                  <input
+                    id="edit-consultation-duration"
+                    type="text"
+                    placeholder="e.g., 30 minutes"
+                    value={newConsultation.duration}
+                    onChange={(e) =>
+                      handleInputChange('duration', e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-consultation-price">Price (₹)</label>
+                  <input
+                    id="edit-consultation-price"
+                    type="number"
+                    placeholder="e.g., 500"
+                    value={newConsultation.price}
+                    onChange={(e) => handleInputChange('price', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-consultation-description">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    id="edit-consultation-description"
+                    placeholder="Brief description of this consultation type"
+                    value={newConsultation.description}
+                    onChange={(e) =>
+                      handleInputChange('description', e.target.value)
+                    }
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button className="cancel-btn" onClick={handleCancelEdit}>
+                  Cancel
+                </button>
+                <button
+                  className="confirm-book-btn"
+                  onClick={handleUpdateConsultation}
+                  disabled={
+                    !newConsultation.name ||
+                    !newConsultation.duration ||
+                    !newConsultation.price ||
+                    updatingId === editingService?.id
+                  }
+                >
+                  {updatingId === editingService?.id ? (
+                    <Loading type="inline" size="small" text="Updating..." />
+                  ) : (
+                    'Update Consultation'
+                  )}
                 </button>
               </div>
             </div>

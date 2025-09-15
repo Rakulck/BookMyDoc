@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
+import {
+  useGetAllServicesQuery,
+  useCreateServiceMutation,
+  useUpdateServiceMutation,
+  useDeleteServiceMutation,
+} from '../store/slices';
 
 const ConsultationContext = createContext();
 
@@ -13,26 +19,47 @@ export const useConsultations = () => {
 };
 
 export const ConsultationProvider = ({ children }) => {
-  const [consultations, setConsultations] = useState([]);
+  const { data: consultations = [], refetch } = useGetAllServicesQuery({});
+  const [createService] = useCreateServiceMutation();
+  const [updateService] = useUpdateServiceMutation();
+  const [deleteService] = useDeleteServiceMutation();
 
-  const addConsultation = (consultation) => {
-    setConsultations((prev) => [...prev, consultation]);
+  const addConsultation = async (consultation) => {
+    try {
+      await createService({
+        name: consultation.name,
+        duration: consultation.duration,
+        price: consultation.price,
+        description: consultation.description,
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error creating consultation:', error);
+      throw error;
+    }
   };
 
-  const removeConsultation = (consultationId) => {
-    setConsultations((prev) =>
-      prev.filter((consultation) => consultation.id !== consultationId),
-    );
+  const removeConsultation = async (consultationId) => {
+    try {
+      await deleteService(consultationId);
+      refetch();
+    } catch (error) {
+      console.error('Error deleting consultation:', error);
+      throw error;
+    }
   };
 
-  const updateConsultation = (consultationId, updatedData) => {
-    setConsultations((prev) =>
-      prev.map((consultation) =>
-        consultation.id === consultationId
-          ? { ...consultation, ...updatedData }
-          : consultation,
-      ),
-    );
+  const updateConsultation = async (consultationId, updatedData) => {
+    try {
+      await updateService({
+        id: consultationId,
+        data: updatedData,
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error updating consultation:', error);
+      throw error;
+    }
   };
 
   const value = {
@@ -40,7 +67,7 @@ export const ConsultationProvider = ({ children }) => {
     addConsultation,
     removeConsultation,
     updateConsultation,
-    setConsultations,
+    refetch,
   };
 
   return (

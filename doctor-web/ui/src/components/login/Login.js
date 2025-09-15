@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import loginBackground from '../../assets/images/doc_image.jpg';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { authLogin, authGoogleSignIn } from '../../store/slices/auth.slice';
-import { ScaleLoader } from 'react-spinners';
+import Loading from '../common/Loading';
 import { ToastErrorMessage } from './../common/ToastMessageWrapper';
 import GoogleLogo from '../common/GoogleLogo';
 
@@ -198,21 +198,7 @@ const Login = () => {
                     {!loading ? 'Login' : 'Loading...'}
                   </button>
                 ) : (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '100%',
-                      width: '100%',
-                    }}
-                  >
-                    <ScaleLoader
-                      size={150}
-                      color={'#18A0FB'}
-                      loading={loading}
-                    />
-                  </div>
+                  <Loading type="inline" size="default" />
                 )}
               </form>
               <div className="signup-option mt-3">
@@ -231,21 +217,11 @@ const Login = () => {
                   </button>
                 </div>
               ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                    width: '100%',
-                  }}
-                >
-                  <ScaleLoader
-                    size={50}
-                    color={'#18A0FB'}
-                    loading={providerLoading}
-                  />
-                </div>
+                <Loading
+                  type="inline"
+                  size="small"
+                  text="Connecting to Google..."
+                />
               )}
             </div>
           </div>

@@ -3,10 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useGetBookingsQuery } from '../../store/slices/bookings.slice';
 import { useGetAvailabilitySlotsQuery } from '../../store/slices/availability.slice';
 import { fetchUserProfile } from '../../store/slices/auth.slice';
-import { API_BASE_URL } from '../../store/api/api';
-import { useConsultations } from '../../contexts/ConsultationContext';
+import { formatDate } from '../../lib/utils';
+
 import Loading from '../common/Loading';
-import ConsultationList from '../common/ConsultationList';
 import './dashboard.css';
 
 const Dashboard = () => {
@@ -16,8 +15,6 @@ const Dashboard = () => {
     isAuthenticated,
     loading: authLoading,
   } = useSelector((state) => state.auth);
-
-  const { consultations } = useConsultations();
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -29,8 +26,8 @@ const Dashboard = () => {
   // Fetch bookings data
   const { data: bookingsData, isLoading: bookingsLoading } =
     useGetBookingsQuery({
-      status: 'all',
-      limit: 10,
+      doctor_id: user?.uid,
+      order_by: 'desc',
     });
 
   // Fetch availability slots
@@ -47,16 +44,12 @@ const Dashboard = () => {
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
     const todayBookings = bookings.filter((booking) => {
-      const bookingDate = new Date(booking.appointmentDate);
+      const bookingDate = new Date(booking.date);
       return bookingDate >= startOfDay && bookingDate <= endOfDay;
     });
 
     const confirmedBookings = bookings.filter(
       (booking) => booking.status === 'confirmed',
-    );
-
-    const pendingBookings = bookings.filter(
-      (booking) => booking.status === 'pending',
     );
 
     const completedBookings = bookings.filter(
@@ -67,7 +60,6 @@ const Dashboard = () => {
       totalBookings: bookings.length,
       todayBookings: todayBookings.length,
       confirmedBookings: confirmedBookings.length,
-      pendingBookings: pendingBookings.length,
       completedBookings: completedBookings.length,
       availableSlots: availabilitySlots.length,
     };
@@ -76,42 +68,47 @@ const Dashboard = () => {
   const stats = calculateStats();
 
   // Get recent bookings (last 5)
-  const recentBookings = bookings
+  const recentBookings = [...bookings]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
 
   // Get upcoming appointments
-  const upcomingAppointments = bookings
+  const upcomingAppointments = [...bookings]
     .filter((booking) => {
-      const appointmentDate = new Date(booking.appointmentDate);
-      return appointmentDate > new Date() && booking.status === 'confirmed';
+      const now = new Date();
+      const appointmentDate = new Date(booking.date);
+      // Include today's appointments that haven't passed yet
+      if (appointmentDate.toDateString() === now.toDateString()) {
+        return true; // Show all of today's appointments
+      }
+      // For future dates, show confirmed appointments
+      return appointmentDate > now && booking.status === 'confirmed';
     })
-    .sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate))
-    .slice(0, 3);
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 5);
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateString);
+        return '';
+      }
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (err) {
+      console.error('Error formatting time:', err);
+      return '';
+    }
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'confirmed':
         return 'badge-success';
-      case 'pending':
-        return 'badge-warning';
+
       case 'completed':
         return 'badge-info';
       case 'cancelled':
@@ -121,41 +118,12 @@ const Dashboard = () => {
     }
   };
 
-  // Get profile picture URL - Fixed to use correct API base URL
-  const getProfilePictureUrl = () => {
-    // Debug log to see what's in user object
-    console.log('🖼️ [DASHBOARD] User object:', user);
-    console.log('🖼️ [DASHBOARD] PhotoUrl field:', user?.photoUrl);
-    console.log('🖼️ [DASHBOARD] API Base URL:', API_BASE_URL);
-
-    if (user?.photoUrl) {
-      // If it's already a full URL (starts with http), use it directly
-      if (user.photoUrl.startsWith('http')) {
-        console.log('🖼️ [DASHBOARD] Using full URL:', user.photoUrl);
-        return user.photoUrl;
-      }
-
-      // If it's a relative path, construct the full URL using API_BASE_URL
-      // Remove leading slash if present to avoid double slashes
-      const cleanPath = user.photoUrl.startsWith('/')
-        ? user.photoUrl.substring(1)
-        : user.photoUrl;
-      const fullImageUrl = `${API_BASE_URL}${cleanPath}`;
-      console.log('🖼️ [DASHBOARD] Constructed image URL:', fullImageUrl);
-      return fullImageUrl;
-    }
-
-    // Fallback to placeholder
-    console.log('🖼️ [DASHBOARD] No photoUrl found, using placeholder');
-    return '/placeholder.png';
-  };
-
   if (!isAuthenticated) {
     return <div>Please log in to view the dashboard</div>;
   }
 
   if (bookingsLoading || availabilityLoading || authLoading) {
-    return <Loading />;
+    return <Loading type="fullscreen" text="Loading dashboard..." />;
   }
 
   return (
@@ -164,8 +132,7 @@ const Dashboard = () => {
       <div className="welcome-section">
         <div className="welcome-content">
           <h1>
-            Welcome back, Dr.{' '}
-            {user?.display_name || user?.firstName || 'Doctor'}!
+            Welcome back, Dr. {user?.user_name || user?.firstName || 'Doctor'}!
           </h1>
           <p className="welcome-subtitle">
             Here's what's happening with your practice today
@@ -205,13 +172,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-card-warning">
+        <div className="stat-card stat-card-info">
           <div className="stat-icon">
-            <i className="fas fa-clock"></i>
+            <i className="fas fa-check-circle"></i>
           </div>
           <div className="stat-content">
-            <h3>{stats.pendingBookings}</h3>
-            <p>Pending Approval</p>
+            <h3>{stats.completedBookings}</h3>
+            <p>Completed</p>
           </div>
         </div>
         {/* 
@@ -241,15 +208,17 @@ const Dashboard = () => {
                   <div key={appointment.id} className="appointment-item">
                     <div className="appointment-time">
                       <span className="time">
-                        {formatTime(appointment.appointmentDate)}
+                        {formatTime(appointment.date)}
                       </span>
                       <span className="date">
-                        {formatDate(appointment.appointmentDate)}
+                        {formatDate(appointment.date)}
                       </span>
                     </div>
                     <div className="appointment-details">
-                      <h4>{appointment.patientName || 'Patient'}</h4>
-                      <p>{appointment.service || 'General Consultation'}</p>
+                      <h4>{appointment.customer?.user_name || 'Patient'}</h4>
+                      <p>
+                        {appointment.service?.name || 'General Consultation'}
+                      </p>
                     </div>
                     <div className="appointment-status">
                       <span
@@ -282,20 +251,12 @@ const Dashboard = () => {
                 {recentBookings.map((booking) => (
                   <div key={booking.id} className="booking-item">
                     <div className="booking-info">
-                      <h4>{booking.patientName || 'Patient'}</h4>
+                      <h4>{booking.customer?.user_name || 'Patient'}</h4>
                       <p>
-                        {formatDate(booking.appointmentDate)} at{' '}
-                        {formatTime(booking.appointmentDate)}
+                        {formatDate(booking.date)} at {formatTime(booking.date)}
                       </p>
                       <span className="booking-service">
-                        {booking.service || 'General Consultation'}
-                      </span>
-                    </div>
-                    <div className="booking-status">
-                      <span
-                        className={`status-badge ${getStatusBadgeClass(booking.status)}`}
-                      >
-                        {booking.status}
+                        {booking.service?.name || 'General Consultation'}
                       </span>
                     </div>
                   </div>
@@ -307,70 +268,6 @@ const Dashboard = () => {
                 <p>No recent bookings</p>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Doctor Info Card */}
-        <div className="dashboard-card doctor-profile-card">
-          <div className="card-header">
-            <h3>Profile Overview</h3>
-          </div>
-          <div className="card-content">
-            <div className="doctor-info">
-              <div className="doctor-avatar">
-                <img
-                  src={getProfilePictureUrl()}
-                  alt="Doctor Avatar"
-                  onError={(e) => {
-                    console.log(
-                      '🖼️ [DASHBOARD] Image failed to load, using placeholder',
-                    );
-                    console.log('🖼️ [DASHBOARD] Failed URL was:', e.target.src);
-                    e.target.src = '/placeholder.png';
-                  }}
-                  onLoad={() => {
-                    console.log('🖼️ [DASHBOARD] Image loaded successfully');
-                  }}
-                />
-                <div className="avatar-status">
-                  <i className="fas fa-circle"></i>
-                </div>
-              </div>
-              <div className="doctor-details">
-                <h4>
-                  Dr.{' '}
-                  {user?.display_name ||
-                    `${user?.firstName} ${user?.lastName}` ||
-                    'Doctor'}
-                </h4>
-                <p className="doctor-specialty">
-                  {user?.title || user?.specialty || 'General Medicine'}
-                </p>
-                <div className="doctor-contact">
-                  <div className="contact-item">
-                    <i className="fas fa-envelope"></i>
-                    <span>{user?.email}</span>
-                  </div>
-                  <div className="contact-item">
-                    <i className="fas fa-phone"></i>
-                    <span>{user?.phone || 'Phone not provided'}</span>
-                  </div>
-                  {user?.address && (
-                    <div className="contact-item">
-                      <i className="fas fa-map-marker-alt"></i>
-                      <span>{user.address}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="doctor-consultations">
-                  <ConsultationList
-                    consultations={consultations}
-                    maxItems={3}
-                    showTitle={true}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

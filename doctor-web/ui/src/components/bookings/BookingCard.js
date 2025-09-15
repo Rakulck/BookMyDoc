@@ -6,7 +6,7 @@ import ConfirmModal from '../common/ConfirmModal';
 import Loading from './../common/Loading';
 import Reschedule from './Reschedule';
 import { useUpdateBookingMutation } from './../../store/slices';
-import { formatTime, isExpireDate } from './../../lib/utils';
+import { formatTime, isExpireDate, formatDate } from './../../lib/utils';
 
 const BookingCard = ({ booking }) => {
   const [updateBooking, updateBookingResult] = useUpdateBookingMutation();
@@ -30,155 +30,45 @@ const BookingCard = ({ booking }) => {
   const RenderActions = () => {
     let buttonAction = null;
     switch (booking?.status) {
-      case 'pending':
-        if (isExpireDate(booking?.date)) {
+      case 'confirmed':
+        const isDatePassed = isExpireDate(booking?.date);
+        if (isDatePassed) {
           buttonAction = (
             <Button
-              variant="primary"
-              className="ms-2"
+              variant="outline-success"
               size="sm"
-              onClick={() =>
-                setConfirmModal({
-                  open: true,
-                  title: 'Reschedule Booking',
-                  children: 'Are you sure want to reschedule this booking?',
-                  confirmButton: 'Yes, Reschedule',
-                  onConfirm: () =>
-                    setConfirmModal({ open: false, action: 'reschedule' }),
-                })
-              }
+              onClick={() => handleBooking('completed')}
             >
-              <Loading
-                loading={
-                  updateBookingResult?.isLoading &&
-                  setConfirmModal?.action === 'reschedule'
-                }
-              >
-                Reschedule
-              </Loading>
-            </Button>
-          );
-        } else {
-          buttonAction = (
-            <Button
-              variant="primary"
-              className="ms-2"
-              size="sm"
-              onClick={() =>
-                setConfirmModal({
-                  open: true,
-                  title: 'Confirm Booking',
-                  body: 'Are you sure want to confirm this booking?',
-                  confirmButton: 'Yes, Confirm',
-                  onConfirm: () => handleBooking('confirmed'),
-                  action: 'confirmed',
-                })
-              }
-            >
-              <Loading
-                loading={
-                  updateBookingResult?.isLoading &&
-                  confirmModal?.action === 'confirmed'
-                }
-              >
-                Confirm
-              </Loading>
+              {updateBookingResult?.isLoading &&
+              confirmModal?.action === 'completed' ? (
+                <Loading type="inline" size="small" text="Completing..." />
+              ) : (
+                'Complete'
+              )}
             </Button>
           );
         }
         break;
-      case 'confirmed':
-        const isDatePassed = isExpireDate(booking?.date);
-        buttonAction = (
-          <>
-            <Button
-              variant="primary"
-              className={isDatePassed ? `ms-2 mb-2` : 'ms-2'}
-              size="sm"
-              onClick={() =>
-                setConfirmModal({
-                  open: true,
-                  title: 'Reschedule Booking',
-                  confirmButton: 'Yes, Reschedule',
-                  children: 'Are you sure want to reschedule this booking?',
-                  onConfirm: () =>
-                    setConfirmModal({ open: false, action: 'reschedule' }),
-                })
-              }
-            >
-              <Loading
-                loading={
-                  updateBookingResult?.isLoading &&
-                  confirmModal?.action === 'reschedule'
-                }
-              >
-                Reschedule
-              </Loading>
-            </Button>
-            {isDatePassed && (
-              <Button
-                variant="primary"
-                className="ms-2 mb-2"
-                size="sm"
-                onClick={() =>
-                  setConfirmModal({
-                    open: true,
-                    title: 'Completed Booking',
-                    confirmButton: 'Yes, Completed',
-                    children: 'Are you sure want to completed this booking?',
-                    onConfirm: () => handleBooking('completed'),
-                    action: 'completed',
-                  })
-                }
-              >
-                <Loading
-                  loading={
-                    updateBookingResult?.isLoading &&
-                    confirmModal?.action === 'completed'
-                  }
-                >
-                  Completed
-                </Loading>
-              </Button>
-            )}
-          </>
-        );
-        break;
       case 'canceled':
         buttonAction = (
           <Button
-            variant="primary"
-            className="ms-2"
+            variant="outline-primary"
             size="sm"
-            onClick={() =>
-              setConfirmModal({
-                open: true,
-                title: 'Resume Booking',
-                body: 'Are you sure want to resume this booking?',
-                confirmButton: 'Yes, Resume',
-                onConfirm: () => handleBooking('pending'),
-                action: 'pending',
-              })
-            }
+            onClick={() => handleBooking('pending')}
           >
-            <Loading
-              loading={
-                updateBookingResult?.isLoading &&
-                confirmModal?.action === 'pending'
-              }
-            >
-              Resume
-            </Loading>
+            {updateBookingResult?.isLoading &&
+            confirmModal?.action === 'pending' ? (
+              <Loading type="inline" size="small" text="Resuming..." />
+            ) : (
+              'Resume'
+            )}
           </Button>
         );
         break;
       default:
         buttonAction = null;
     }
-    if (buttonAction) {
-      return buttonAction;
-    }
-    return <></>;
+    return buttonAction || <></>;
   };
 
   return (
@@ -198,52 +88,72 @@ const BookingCard = ({ booking }) => {
         <Row>
           <Col xs={8}>
             <Card.Title className="card-title">
-              {booking?.customer.display_name}
+              {booking?.customer.user_name}
             </Card.Title>
             <Card.Text className="card-text">
-              {booking.date},{' '}
-              <span className="text-capitalize">{booking?.slot?.day}</span>,{' '}
+              {formatDate(booking.date)},{' '}
               {formatTime(booking?.slot?.start_time)} -{' '}
               {formatTime(booking?.slot?.end_time)}
             </Card.Text>
             <Card.Text className="card-text">
-              {booking?.service?.name} - ({CURRENCY_SYMBOL}
-              {booking?.service?.price_amount})
+              {booking?.service?.name} - {CURRENCY_SYMBOL}{' '}
+              {booking?.service?.price || booking?.service?.price_amount}
               <br />
               Payment: <Badge>{booking?.payment?.status}</Badge>
             </Card.Text>
           </Col>
-          <Col xs={4} className="text-right">
+          <Col
+            xs={4}
+            className="text-right d-flex flex-column align-items-end gap-2"
+          >
+            <div className="d-flex gap-2">
+              {['pending', 'confirmed'].includes(booking?.status) && (
+                <>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmModal({
+                        open: true,
+                        title: 'Reschedule Booking',
+                        confirmButton: 'Yes, Reschedule',
+                        children:
+                          'Are you sure want to reschedule this booking?',
+                        onConfirm: () =>
+                          setConfirmModal({
+                            open: false,
+                            action: 'reschedule',
+                          }),
+                      })
+                    }
+                  >
+                    {updateBookingResult?.isLoading &&
+                    confirmModal?.action === 'reschedule' ? (
+                      <Loading
+                        type="inline"
+                        size="small"
+                        text="Rescheduling..."
+                      />
+                    ) : (
+                      'Reschedule'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => handleBooking('canceled')}
+                  >
+                    {updateBookingResult?.isLoading &&
+                    confirmModal?.action === 'canceled' ? (
+                      <Loading type="inline" size="small" text="Canceling..." />
+                    ) : (
+                      'Cancel'
+                    )}
+                  </Button>
+                </>
+              )}
+            </div>
             <RenderActions />
-            {['pending', 'confirmed'].includes(booking?.status) && (
-              <Button
-                variant="danger"
-                className="ms-2"
-                size="sm"
-                onClick={() => {
-                  setConfirmModal({
-                    open: true,
-                    type: 'danger',
-                    title: 'Cancel Booking',
-                    confirmButton: 'Yes, Cancel',
-                    body: 'Are you sure want to cancel this booking?',
-                    onConfirm: () => {
-                      handleBooking('canceled');
-                    },
-                    action: 'canceled',
-                  });
-                }}
-              >
-                <Loading
-                  loading={
-                    updateBookingResult?.isLoading &&
-                    confirmModal?.action === 'canceled'
-                  }
-                >
-                  Cancel
-                </Loading>
-              </Button>
-            )}
           </Col>
         </Row>
       </Card.Body>

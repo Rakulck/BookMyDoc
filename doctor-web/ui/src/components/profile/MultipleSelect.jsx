@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './multiple.css';
 
 const ServicesTagSelect = ({ data, formFields, handleChange }) => {
   const [selectedServices, setSelectedServices] = useState(
     formFields?.services || [],
   );
+
+  useEffect(() => {
+    setSelectedServices(formFields?.services || []);
+  }, [formFields?.services]);
 
   const handleSelectChange = (event) => {
     const selectedOption = event.target.value;
@@ -42,9 +46,10 @@ const ServicesTagSelect = ({ data, formFields, handleChange }) => {
       {/* Tags Display */}
       <div className="tags-container">
         {selectedServices.map((serviceId) => {
-          const service = data.find((item) => item.service_id === serviceId);
+          const service = data?.find((item) => item?.service_id === serviceId);
+          if (!service) return null;
           return (
-            <span key={service.id} className="tag">
+            <span key={service.service_id} className="tag">
               {service.name}
               <button
                 type="button"
@@ -68,11 +73,13 @@ const ServicesTagSelect = ({ data, formFields, handleChange }) => {
         <option value="" disabled>
           Select a service
         </option>
-        {data.map((service) => (
-          <option key={service.id} value={service.service_id}>
-            {service.name}
-          </option>
-        ))}
+        {data?.map((service) =>
+          service?.service_id && service?.name ? (
+            <option key={service.service_id} value={service.service_id}>
+              {service.name}
+            </option>
+          ) : null,
+        )}
       </select>
     </div>
   );

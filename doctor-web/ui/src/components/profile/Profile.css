@@ -177,7 +177,7 @@ div#profile .edit-btn {
 }
 
 div#profile .edit-btn:hover {
-  background: #007BFF;
+  background: #007bff;
   color: white;
 }
 
@@ -269,7 +269,7 @@ div#profile .btn-link {
 }
 
 div#profile .btn-link:hover {
-  background: #007BFF;
+  background: #007bff;
   text-decoration: none;
   color: white;
 }
@@ -329,7 +329,7 @@ div#profile .image-edit-btn {
 }
 
 div#profile .image-edit-btn:hover {
-  background: #007BFF;
+  background: #007bff;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(24, 160, 251, 0.4);
 }
@@ -493,7 +493,7 @@ div#profile .btn-primary {
 }
 
 div#profile .btn-primary:hover {
-  background: #007BFF;
+  background: #007bff;
 }
 
 div#profile .divided {
@@ -521,7 +521,7 @@ div#profile .save:hover {
 }
 
 /* File Input Styling */
-div#profile input[type="file"] {
+div#profile input[type='file'] {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -529,7 +529,7 @@ div#profile input[type="file"] {
   transition: all 0.2s ease;
 }
 
-div#profile input[type="file"]:hover {
+div#profile input[type='file']:hover {
   border-color: #18a0fb;
 }
 
@@ -549,7 +549,7 @@ div#profile select.form-control {
   div#profile {
     padding: 1rem 0;
   }
-  
+
   div#profile .profile-horizontal-layout {
     flex-direction: column;
     align-items: center;
@@ -557,68 +557,68 @@ div#profile select.form-control {
     gap: 1.5rem;
     padding: 1.5rem;
   }
-  
+
   div#profile .profile-image {
     width: 150px;
     height: 150px;
   }
-  
+
   div#profile .profile-name {
     font-size: 2rem;
   }
-  
+
   div#profile .profile-title {
     font-size: 1.25rem;
   }
-  
+
   div#profile .profile-hospital {
     font-size: 1rem;
   }
-  
+
   div#profile .expertise-tags,
   div#profile .services-tags {
     justify-content: center;
   }
-  
+
   /* Make form single column on mobile */
   div#profile .form-row {
     grid-template-columns: 1fr;
     gap: 0;
   }
-  
+
   div#profile .form-section {
     padding: 1rem;
     margin: 1rem 0;
   }
-  
+
   div#profile .profile-image-edit-section {
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
   }
-  
+
   div#profile .edit-profile-image {
     width: 120px;
     height: 120px;
   }
-  
+
   div#profile .image-edit-btn {
     font-size: 0.8rem;
     padding: 0.4rem 0.8rem;
   }
-  
+
   div#profile .card img {
     width: 120px;
     height: 120px;
   }
-  
+
   div#profile .card-title:first-of-type {
     font-size: 1.75rem;
   }
-  
+
   div#profile .divided {
     flex-direction: column;
   }
-  
+
   div#profile .head-experties {
     justify-content: center;
   }
