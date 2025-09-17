@@ -61,6 +61,7 @@
   max-width: 800px;
   padding: 1.5rem;
   position: relative;
+  overflow: visible;
 }
 
 /* Header Section */
@@ -500,4 +501,379 @@
 #availability .btn-outline-secondary:focus,
 #availability .btn-outline-danger:focus {
   box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+}
+
+/* Calendly-Style Time Slot Design */
+#availability .calendly-time-slot {
+  background: var(--medical-white);
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  overflow: visible;
+  position: relative;
+}
+
+#availability .calendly-time-slot:hover {
+  border-color: var(--medical-primary);
+  box-shadow: 0 2px 8px rgba(24, 160, 251, 0.1);
+}
+
+#availability .time-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+#availability .time-display {
+  flex: 1;
+}
+
+#availability .time-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  letter-spacing: -0.01em;
+}
+
+#availability .time-slot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#availability .action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+#availability .copy-btn {
+  background: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+
+#availability .copy-btn:hover {
+  background: var(--medical-primary);
+  color: white;
+  border-color: var(--medical-primary);
+}
+
+#availability .delete-btn {
+  background: #fef5e7;
+  color: #d69e2e;
+  border: 1px solid #f6e05e;
+}
+
+#availability .delete-btn:hover {
+  background: #e53e3e;
+  color: white;
+  border-color: #e53e3e;
+}
+
+#availability .time-editor {
+  padding: 20px;
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+#availability .time-input-group {
+  flex: 1;
+  min-width: 140px;
+}
+
+#availability .time-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#availability .time-separator {
+  font-size: 14px;
+  font-weight: 500;
+  color: #718096;
+  margin-bottom: 6px;
+  align-self: flex-end;
+}
+
+/* Quick Preset Buttons */
+#availability .preset-btn {
+  background: var(--medical-white);
+  border: 1px solid var(--medical-gray-300);
+  color: var(--medical-gray-600);
+  border-radius: var(--border-radius-sm);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: var(--transition);
+  min-width: 70px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#availability .preset-btn:hover {
+  background: var(--medical-primary);
+  color: var(--medical-white);
+  border-color: var(--medical-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Calendly-Style Dropdowns */
+#availability .calendly-time-dropdown {
+  width: 100%;
+  position: relative;
+}
+
+#availability .calendly-time-dropdown .dropdown-toggle {
+  background: var(--medical-white);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  padding: 10px 12px;
+  font-weight: 500;
+  font-size: 14px;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  position: relative;
+}
+
+#availability .calendly-time-dropdown .dropdown-toggle:hover,
+#availability .calendly-time-dropdown .dropdown-toggle:focus {
+  background: var(--medical-white);
+  border-color: var(--medical-primary);
+  color: #374151;
+  box-shadow: 0 0 0 3px rgba(24, 160, 251, 0.1);
+}
+
+#availability .calendly-time-dropdown .dropdown-toggle::after {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 4px solid #6b7280;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  border-bottom: none;
+}
+
+#availability .calendly-time-dropdown .dropdown-menu {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  margin-top: 4px;
+  min-width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background: white;
+}
+
+#availability .calendly-time-dropdown.show .dropdown-menu {
+  display: block;
+}
+
+#availability .time-option {
+  padding: 10px 16px;
+  color: #374151;
+  transition: all 0.15s ease;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+#availability .time-option:hover {
+  background: #f3f4f6;
+  color: var(--medical-primary);
+}
+
+#availability .time-option:active,
+#availability .time-option:focus {
+  background: var(--medical-primary);
+  color: white;
+}
+
+/* Ensure dropdowns are not clipped by parent containers */
+#availability .dropdown {
+  position: static;
+}
+
+#availability .dropdown-menu {
+  position: absolute !important;
+  will-change: transform;
+  transform: translate3d(0px, 0px, 0px);
+}
+
+/* Fix for Bootstrap dropdown positioning */
+#availability .calendly-time-dropdown .dropdown-menu.show {
+  display: block;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+}
+
+/* Time Slots List Container */
+#availability .time-slots-list {
+  margin-top: 1rem;
+  overflow: visible;
+}
+
+#availability .time-slots-container {
+  overflow: visible;
+}
+
+#availability .time-editor {
+  padding: 20px;
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* Action Buttons in Time Slots */
+#availability .time-slot-item .btn {
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
+  height: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+}
+
+#availability .time-slot-item .btn-outline-secondary {
+  background: var(--medical-white);
+  border: 1px solid var(--medical-gray-300);
+  color: var(--medical-gray-600);
+}
+
+#availability .time-slot-item .btn-outline-secondary:hover {
+  background: var(--medical-primary);
+  color: var(--medical-white);
+  border-color: var(--medical-primary);
+}
+
+#availability .time-slot-item .btn-outline-danger {
+  background: var(--medical-white);
+  border: 1px solid var(--medical-danger);
+  color: var(--medical-danger);
+}
+
+#availability .time-slot-item .btn-outline-danger:hover {
+  background: var(--medical-danger);
+  color: var(--medical-white);
+  border-color: var(--medical-danger);
+}
+
+/* Quick Presets Section */
+#availability .quick-presets-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--medical-gray-50);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--medical-gray-200);
+}
+
+#availability .quick-presets-section p {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--medical-gray-600);
+  font-weight: 500;
+}
+
+/* Mobile Responsiveness for Calendly-Style Components */
+@media (max-width: 768px) {
+  #availability .time-slot-header {
+    padding: 12px 16px;
+  }
+  
+  #availability .time-text {
+    font-size: 14px;
+  }
+  
+  #availability .time-editor {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  #availability .time-input-group {
+    min-width: auto;
+  }
+  
+  #availability .time-separator {
+    align-self: center;
+    margin-bottom: 0;
+    order: -1;
+  }
+  
+  #availability .action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 576px) {
+  #availability .calendly-time-slot {
+    margin-bottom: 8px;
+  }
+  
+  #availability .time-slot-header {
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  #availability .time-slot-actions {
+    align-self: flex-end;
+  }
+  
+  #availability .time-editor {
+    padding: 12px;
+  }
+  
+  #availability .calendly-time-dropdown .dropdown-toggle {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  #availability .time-label {
+    font-size: 11px;
+  }
 }

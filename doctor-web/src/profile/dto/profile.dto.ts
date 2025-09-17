@@ -72,6 +72,16 @@ export class ProfileDto {
   experience?: string;
 
   @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Doctor registration number' })
+  doctor_registration_number?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Hospital name' })
+  hospital_name?: string;
+
+  @IsOptional()
   @IsArray()
   @Transform(({ value }) => {
     // If it's already an array, clean it up

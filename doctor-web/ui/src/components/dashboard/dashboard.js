@@ -52,15 +52,15 @@ const Dashboard = () => {
       (booking) => booking.status === 'confirmed',
     );
 
-    const completedBookings = bookings.filter(
-      (booking) => booking.status === 'completed',
+    const remainingBookings = bookings.filter(
+      (booking) => booking.status === 'confirmed',
     );
 
     return {
       totalBookings: bookings.length,
       todayBookings: todayBookings.length,
       confirmedBookings: confirmedBookings.length,
-      completedBookings: completedBookings.length,
+      remainingBookings: remainingBookings.length,
       availableSlots: availabilitySlots.length,
     };
   };
@@ -172,13 +172,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-card-info">
+        <div className="stat-card stat-card-warning">
           <div className="stat-icon">
-            <i className="fas fa-check-circle"></i>
+            <i className="fas fa-clock"></i>
           </div>
           <div className="stat-content">
-            <h3>{stats.completedBookings}</h3>
-            <p>Completed</p>
+            <h3>{stats.remainingBookings}</h3>
+            <p>Remaining</p>
           </div>
         </div>
         {/* 

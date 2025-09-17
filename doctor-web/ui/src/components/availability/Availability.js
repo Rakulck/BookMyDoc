@@ -9,7 +9,6 @@ import {
   Card,
   Row,
   Col,
-  Modal,
 } from 'react-bootstrap';
 import { ToastContainer } from 'react-toastify';
 import { FaPlus, FaTrash, FaClone } from 'react-icons/fa';
@@ -23,6 +22,7 @@ import { ToastMessage } from '../../components/common/ToastMessageWrapper';
 import {
   generateTimeOptions,
   prepareAvailabilitySlots,
+  formatTime,
 } from './../../lib/utils';
 
 const daysOfWeek = [
@@ -41,24 +41,28 @@ const predefinedTimeSlots = [
     start: { value: '09:00', label: '09:00 AM' },
     end_time: '12:00',
     end: { value: '12:00', label: '12:00 PM' },
+    label: 'Morning (9 AM - 12 PM)',
   },
   {
     start_time: '14:00',
     start: { value: '14:00', label: '02:00 PM' },
     end_time: '17:00',
     end: { value: '17:00', label: '05:00 PM' },
+    label: 'Afternoon (2 PM - 5 PM)',
   },
   {
     start_time: '18:00',
     start: { value: '18:00', label: '06:00 PM' },
     end_time: '21:00',
     end: { value: '21:00', label: '09:00 PM' },
+    label: 'Evening (6 PM - 9 PM)',
   },
   {
     start_time: '09:00',
     start: { value: '09:00', label: '09:00 AM' },
     end_time: '17:00',
     end: { value: '17:00', label: '05:00 PM' },
+    label: 'Full Day (9 AM - 5 PM)',
   },
 ];
 
@@ -67,53 +71,10 @@ const initialTimeSlot = predefinedTimeSlots[0];
 const startTimeOptions = generateTimeOptions('start');
 const endTimeOptions = generateTimeOptions('end');
 
-const TimeSlotModal = ({ show, onHide, onSelect, dayKey }) => {
-  if (!show) return null;
-
-  return (
-    <div
-      className="modal show"
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-    >
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Select Time Slot</h5>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={onHide}
-            ></button>
-          </div>
-          <div className="modal-body">
-            <div className="d-grid gap-2">
-              {predefinedTimeSlots.map((slot, idx) => (
-                <Button
-                  key={idx}
-                  variant="outline-primary"
-                  size="lg"
-                  className="text-start"
-                  onClick={() => onSelect(slot)}
-                >
-                  {`${slot.start.label} - ${slot.end.label}`}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Availability = () => {
   const { data, isLoading, isError } = useGetAvailabilitySlotsQuery({});
   const [saveAvailabilitySlots, saveAvailabilitySlotsResult] =
     useSaveAvailabilitySlotsMutation();
-  const [showTimeModal, setShowTimeModal] = useState({
-    show: false,
-    dayKey: null,
-  });
   const [availability, setAvailability] = useState(() =>
     daysOfWeek.reduce((results, day) => {
       results[day.toLowerCase()] = {
@@ -141,7 +102,17 @@ const Availability = () => {
       [dayKey]: {
         ...prev[dayKey],
         enabled: !prev[dayKey].enabled,
-        timeSlots: prev[dayKey].enabled ? prev[dayKey].timeSlots : [],
+        timeSlots: prev[dayKey].enabled
+          ? []
+          : [
+              {
+                day: dayKey,
+                start: initialTimeSlot.start,
+                end: initialTimeSlot.end,
+                start_time: initialTimeSlot.start_time,
+                end_time: initialTimeSlot.end_time,
+              },
+            ],
       },
     }));
   };
@@ -180,19 +151,31 @@ const Availability = () => {
   };
 
   const handleAddSlot = (dayKey, slot = initialTimeSlot) => {
-    setAvailability((prev) => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        timeSlots: [
-          ...(prev[dayKey].timeSlots || []),
-          {
-            ...slot,
-            day: dayKey,
+    setAvailability((prev) => {
+      const currentSlots = prev[dayKey].timeSlots || [];
+      let newSlot = { ...slot, day: dayKey };
+
+      // If there are existing slots, use the end time of the last slot as the start time
+      if (currentSlots.length > 0) {
+        const lastSlot = currentSlots[currentSlots.length - 1];
+        newSlot = {
+          ...newSlot,
+          start_time: lastSlot.end_time,
+          start: {
+            value: lastSlot.end_time,
+            label: formatTime(lastSlot.end_time),
           },
-        ],
-      },
-    }));
+        };
+      }
+
+      return {
+        ...prev,
+        [dayKey]: {
+          ...prev[dayKey],
+          timeSlots: [...currentSlots, newSlot],
+        },
+      };
+    });
   };
 
   const handleRemoveSlot = (dayKey, slotIndex) => {
@@ -233,59 +216,8 @@ const Availability = () => {
     saveAvailabilitySlots(payload);
   };
 
-  const handleTimeSlotSelect = (slot) => {
-    const dayKey = showTimeModal.dayKey;
-    if (!dayKey || !availability[dayKey]) return;
-
-    // Enable the day if it's not enabled
-    if (!availability[dayKey].enabled) {
-      setAvailability((prev) => ({
-        ...prev,
-        [dayKey]: {
-          ...prev[dayKey],
-          enabled: true,
-          timeSlots: [
-            {
-              day: dayKey,
-              start: slot.start,
-              end: slot.end,
-              start_time: slot.start_time,
-              end_time: slot.end_time,
-            },
-          ],
-        },
-      }));
-    } else {
-      // Add new slot to existing slots
-      setAvailability((prev) => ({
-        ...prev,
-        [dayKey]: {
-          ...prev[dayKey],
-          timeSlots: [
-            ...(prev[dayKey].timeSlots || []),
-            {
-              day: dayKey,
-              start: slot.start,
-              end: slot.end,
-              start_time: slot.start_time,
-              end_time: slot.end_time,
-            },
-          ],
-        },
-      }));
-    }
-
-    setShowTimeModal({ show: false, dayKey: null });
-  };
-
   return (
     <div id="availability">
-      <TimeSlotModal
-        show={showTimeModal.show}
-        onHide={() => setShowTimeModal({ show: false, dayKey: null })}
-        onSelect={handleTimeSlotSelect}
-        dayKey={showTimeModal.dayKey}
-      />
       <div className="container mt-3 d-flex justify-content-center align-items-center">
         {isLoading && <Loading type="overlay" text="Loading availability..." />}
         <ToastContainer />
@@ -322,125 +254,117 @@ const Availability = () => {
                   <Col xs={12} sm={9}>
                     {day.enabled && (
                       <div className="time-slots-container">
-                        {day.timeSlots.length === 0 ? (
-                          <div className="text-center p-3 border rounded mb-3 bg-light">
-                            <p className="mb-2 text-muted">
-                              No availability added for {day.day}
-                            </p>
-                            <Button
-                              variant="primary"
-                              onClick={() =>
-                                setShowTimeModal({ show: true, dayKey })
-                              }
-                              size="sm"
-                            >
-                              <FaPlus className="me-1" /> Add Your First Time
-                              Slot
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            {day.timeSlots.map((slot, slotIndex) => (
-                              <InputGroup
-                                key={slotIndex}
-                                className="mb-2 align-items-center"
-                                size="sm"
-                              >
-                                <DropdownButton
-                                  as={InputGroup.Prepend}
-                                  variant="outline-secondary"
-                                  title={slot.start?.label}
-                                  id={`dropdown-start-${dayIndex}-${slotIndex}`}
-                                  className="time-dropdown"
-                                  size="sm"
-                                  onSelect={(value) =>
-                                    handleTimeChange(
-                                      dayKey,
-                                      slotIndex,
-                                      'start',
-                                      value,
-                                    )
-                                  }
-                                >
-                                  <div className="dropdown-scrollable">
-                                    {startTimeOptions.map((time, index) => (
-                                      <Dropdown.Item
-                                        key={index}
-                                        eventKey={JSON.stringify(time)}
-                                      >
-                                        {time?.label}
-                                      </Dropdown.Item>
-                                    ))}
-                                  </div>
-                                </DropdownButton>
+                        <div className="time-slots-list">
+                          {day.timeSlots.map((slot, slotIndex) => (
+                            <div key={slotIndex} className="calendly-time-slot">
+                              <div className="time-slot-header">
+                                <div className="time-display">
+                                  <span className="time-text">
+                                    {slot.start?.label} - {slot.end?.label}
+                                  </span>
+                                </div>
+                                <div className="time-slot-actions">
+                                  <button
+                                    className="action-btn copy-btn"
+                                    onClick={() =>
+                                      handleCloneSlot(dayKey, slotIndex)
+                                    }
+                                    title="Copy this time slot"
+                                  >
+                                    <FaClone />
+                                  </button>
+                                  <button
+                                    className="action-btn delete-btn"
+                                    onClick={() =>
+                                      handleRemoveSlot(dayKey, slotIndex)
+                                    }
+                                    title="Delete this time slot"
+                                  >
+                                    <FaTrash />
+                                  </button>
+                                </div>
+                              </div>
 
-                                <InputGroup.Text>-</InputGroup.Text>
+                              <div className="time-editor">
+                                <div className="time-input-group">
+                                  <label className="time-label">
+                                    Start Time
+                                  </label>
+                                  <DropdownButton
+                                    variant="outline-secondary"
+                                    title={slot.start?.label}
+                                    id={`dropdown-start-${dayIndex}-${slotIndex}`}
+                                    className="calendly-time-dropdown"
+                                    size="sm"
+                                    onSelect={(value) =>
+                                      handleTimeChange(
+                                        dayKey,
+                                        slotIndex,
+                                        'start',
+                                        value,
+                                      )
+                                    }
+                                  >
+                                    <div className="dropdown-scrollable">
+                                      {startTimeOptions.map((time, index) => (
+                                        <Dropdown.Item
+                                          key={index}
+                                          eventKey={JSON.stringify(time)}
+                                          className="time-option"
+                                        >
+                                          {time?.label}
+                                        </Dropdown.Item>
+                                      ))}
+                                    </div>
+                                  </DropdownButton>
+                                </div>
 
-                                <DropdownButton
-                                  as={InputGroup.Append}
-                                  variant="outline-secondary"
-                                  title={slot.end?.label}
-                                  id={`dropdown-end-${dayIndex}-${slotIndex}`}
-                                  className="time-dropdown"
-                                  size="sm"
-                                  onSelect={(value) =>
-                                    handleTimeChange(
-                                      dayKey,
-                                      slotIndex,
-                                      'end',
-                                      value,
-                                    )
-                                  }
-                                >
-                                  <div className="dropdown-scrollable">
-                                    {endTimeOptions.map((time, index) => (
-                                      <Dropdown.Item
-                                        key={index}
-                                        eventKey={JSON.stringify(time)}
-                                      >
-                                        {time?.label}
-                                      </Dropdown.Item>
-                                    ))}
-                                  </div>
-                                </DropdownButton>
-                                <Button
-                                  variant="outline-secondary"
-                                  onClick={() =>
-                                    handleCloneSlot(dayKey, slotIndex)
-                                  }
-                                  size="sm"
-                                  className="ms-1"
-                                >
-                                  <FaClone className="me-1" />
-                                  Copy
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  onClick={() =>
-                                    handleRemoveSlot(dayKey, slotIndex)
-                                  }
-                                  size="sm"
-                                  className="ms-1"
-                                >
-                                  <FaTrash className="me-1" />
-                                  Delete
-                                </Button>
-                              </InputGroup>
-                            ))}
-                            <div className="mt-3">
-                              <Button
-                                variant="outline-primary"
-                                onClick={() =>
-                                  setShowTimeModal({ show: true, dayKey })
-                                }
-                                size="sm"
-                              >
-                                <FaPlus className="me-1" /> Add Another Time
-                                Slot
-                              </Button>
+                                <div className="time-separator">to</div>
+
+                                <div className="time-input-group">
+                                  <label className="time-label">End Time</label>
+                                  <DropdownButton
+                                    variant="outline-secondary"
+                                    title={slot.end?.label}
+                                    id={`dropdown-end-${dayIndex}-${slotIndex}`}
+                                    className="calendly-time-dropdown"
+                                    size="sm"
+                                    onSelect={(value) =>
+                                      handleTimeChange(
+                                        dayKey,
+                                        slotIndex,
+                                        'end',
+                                        value,
+                                      )
+                                    }
+                                  >
+                                    <div className="dropdown-scrollable">
+                                      {endTimeOptions.map((time, index) => (
+                                        <Dropdown.Item
+                                          key={index}
+                                          eventKey={JSON.stringify(time)}
+                                          className="time-option"
+                                        >
+                                          {time?.label}
+                                        </Dropdown.Item>
+                                      ))}
+                                    </div>
+                                  </DropdownButton>
+                                </div>
+                              </div>
                             </div>
-                          </>
-                        )}
+                          ))}
+                        </div>
+
+                        <div className="mt-3">
+                          <Button
+                            variant="outline-primary"
+                            onClick={() => handleAddSlot(dayKey)}
+                            size="sm"
+                          >
+                            <FaPlus className="me-1" /> Add New Time Slot
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </Col>

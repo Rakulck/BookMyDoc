@@ -73,6 +73,10 @@ export class ProfileController {
           type: 'string',
           nullable: true,
         },
+        hospital_name: {
+          type: 'string',
+          nullable: true,
+        },
         expertiseList: {
           type: 'array',
           items: { type: 'string' },

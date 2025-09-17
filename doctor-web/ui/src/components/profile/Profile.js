@@ -21,13 +21,14 @@ const Profile = () => {
   const [formFields, setFormFields] = useState({
     user_name: '',
     title: '',
-    // hospital_name: '',
+    hospital_name: '',
     expertiseList: [],
     experience: '',
     bio: '',
     photoUrl: '',
     phone: '',
     gender: '',
+    doctor_registration_number: '',
     services: [],
     servicesIds: [],
     location: {
@@ -88,12 +89,14 @@ const Profile = () => {
       setFormFields({
         user_name: user.user_name || '',
         title: user.title || '',
+        hospital_name: user.hospital_name || '',
         expertiseList: expertiseList,
         experience: user.experience || 0,
         bio: user.bio || '',
         photoUrl: '',
         phone: user.phone || '',
         gender: user.gender || '',
+        doctor_registration_number: user.doctor_registration_number || '',
         services: user.services || [],
         location: {
           address: user.location?.address || '',
@@ -174,10 +177,15 @@ const Profile = () => {
 
     formData.append('user_name', String(formFields.user_name));
     formData.append('title', String(formFields.title));
+    formData.append('hospital_name', String(formFields.hospital_name));
     formData.append('phone', String(formFields.phone));
     formData.append('gender', String(formFields.gender));
     formData.append('bio', String(formFields.bio));
     formData.append('experience', Number(formFields.experience));
+    formData.append(
+      'doctor_registration_number',
+      String(formFields.doctor_registration_number),
+    );
     // formData.append('hospital_name', String(formFields.hospital_name));
 
     if (formFields.location) {
@@ -306,6 +314,21 @@ const Profile = () => {
 
                     <div className="form-row">
                       <div className="form-group">
+                        <label htmlFor="hospital_name">Hospital Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="hospital_name"
+                          name="hospital_name"
+                          value={formFields?.hospital_name || ''}
+                          onChange={handleChange}
+                          placeholder="Enter hospital name"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
                         <label htmlFor="phone">Phone</label>
                         <input
                           type="tel"
@@ -358,6 +381,21 @@ const Profile = () => {
                           value={formFields?.experience || ''}
                           onChange={handleChange}
                           placeholder="Enter experience"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="doctor_registration_number">
+                          Doctor Registration Number
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="doctor_registration_number"
+                          name="doctor_registration_number"
+                          value={formFields?.doctor_registration_number || ''}
+                          onChange={handleChange}
+                          placeholder="Enter doctor registration number"
                         />
                       </div>
 
@@ -512,12 +550,18 @@ const Profile = () => {
                         <h2 className="profile-name">
                           {profileData?.user_name}
                         </h2>
+                        {profileData?.doctor_registration_number && (
+                          <small className="profile-registration-subtitle">
+                            Registration:{' '}
+                            {profileData?.doctor_registration_number}
+                          </small>
+                        )}
                         <h4 className="profile-title">{profileData?.title}</h4>
-                        {/* {profileData?.hospital_name && (
+                        {profileData?.hospital_name && (
                           <h5 className="profile-hospital">
                             {profileData?.hospital_name}
                           </h5>
-                        )} */}
+                        )}
                         <div className="profile-experience">
                           <span className="experience-badge">
                             {profileData?.experience}+ years experience

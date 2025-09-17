@@ -15,6 +15,16 @@ const Service = () => {
     description: '',
   });
 
+  // Predefined timing options
+  const timingOptions = [
+    { value: '10 minutes', label: '10 minutes' },
+    { value: '15 minutes', label: '15 minutes' },
+    { value: '20 minutes', label: '20 minutes' },
+    { value: '30 minutes', label: '30 minutes' },
+    { value: '45 minutes', label: '45 minutes' },
+    { value: '1 hour', label: '1 hour' },
+  ];
+
   const {
     consultations,
     addConsultation,
@@ -243,28 +253,40 @@ const Service = () => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="consultation-duration">Duration</label>
-                  <input
-                    id="consultation-duration"
-                    type="text"
-                    placeholder="e.g., 30 minutes"
-                    value={newConsultation.duration}
-                    onChange={(e) =>
-                      handleInputChange('duration', e.target.value)
-                    }
-                  />
-                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="consultation-duration">Duration</label>
+                    <select
+                      id="consultation-duration"
+                      value={newConsultation.duration}
+                      onChange={(e) =>
+                        handleInputChange('duration', e.target.value)
+                      }
+                    >
+                      <option value="">Select duration</option>
+                      {timingOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="consultation-price">Price (₹)</label>
-                  <input
-                    id="consultation-price"
-                    type="number"
-                    placeholder="e.g., 500"
-                    value={newConsultation.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                  />
+                  <div className="form-group">
+                    <label htmlFor="consultation-price">Price (₹)</label>
+                    <input
+                      id="consultation-price"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="e.g., 500"
+                      value={newConsultation.price}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        handleInputChange('price', value);
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -337,28 +359,40 @@ const Service = () => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="edit-consultation-duration">Duration</label>
-                  <input
-                    id="edit-consultation-duration"
-                    type="text"
-                    placeholder="e.g., 30 minutes"
-                    value={newConsultation.duration}
-                    onChange={(e) =>
-                      handleInputChange('duration', e.target.value)
-                    }
-                  />
-                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-consultation-duration">Duration</label>
+                    <select
+                      id="edit-consultation-duration"
+                      value={newConsultation.duration}
+                      onChange={(e) =>
+                        handleInputChange('duration', e.target.value)
+                      }
+                    >
+                      <option value="">Select duration</option>
+                      {timingOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="edit-consultation-price">Price (₹)</label>
-                  <input
-                    id="edit-consultation-price"
-                    type="number"
-                    placeholder="e.g., 500"
-                    value={newConsultation.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                  />
+                  <div className="form-group">
+                    <label htmlFor="edit-consultation-price">Price (₹)</label>
+                    <input
+                      id="edit-consultation-price"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="e.g., 500"
+                      value={newConsultation.price}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        handleInputChange('price', value);
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
