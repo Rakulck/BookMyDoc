@@ -4,16 +4,7 @@ import {
   useUpdateBookingMutation,
 } from './../../store/slices';
 import { formatTime } from './../../lib/utils';
-import {
-  Modal,
-  Form,
-  Badge,
-  Stack,
-  Row,
-  Col,
-  Alert,
-  Button,
-} from 'react-bootstrap';
+import { Modal, Form, Alert, Button } from 'react-bootstrap';
 import Loading from './../common/Loading';
 
 const TimeSlot = ({ slot, isSelected }) => {
