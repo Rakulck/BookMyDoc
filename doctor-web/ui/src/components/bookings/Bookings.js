@@ -13,19 +13,22 @@ const Bookings = () => {
     upcoming: [],
     completed: [],
     canceled: [],
+    rescheduleRequests: [],
   });
   const { data, isLoading, isFetching } = useGetBookingsQuery({});
 
   useEffect(() => {
     if (data) {
-      const upcoming = data.filter((item) => item?.status === 'confirmed');
+      const upcoming = data.filter((item) => ['confirmed', 'reschedule_pending'].includes(item?.status));
       const completed = data.filter((item) => item?.status === 'completed');
       const canceled = data.filter((item) => item?.status === 'canceled');
+      const rescheduleRequests = data.filter((item) => item?.status === 'reschedule_pending');
       setBookings({
         all: data,
         upcoming,
         completed,
         canceled,
+        rescheduleRequests,
       });
     }
   }, [data]);
@@ -54,6 +57,12 @@ const Bookings = () => {
       label: 'Canceled',
       count: bookings?.canceled?.length || 0,
       data: bookings?.canceled,
+    },
+    {
+      key: 'rescheduleRequests',
+      label: 'Reschedule Requests',
+      count: bookings?.rescheduleRequests?.length || 0,
+      data: bookings?.rescheduleRequests,
     },
   ];
 

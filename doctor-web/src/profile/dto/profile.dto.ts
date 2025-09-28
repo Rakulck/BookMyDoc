@@ -184,6 +184,124 @@ export class ProfileDto {
   notification_tokens?: any;
 
   @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim()).filter((v) => v.length > 0);
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+          ? parsed.map((v) => String(v).trim()).filter((v) => v.length > 0)
+          : [];
+      } catch {
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+      }
+    }
+    return [];
+  })
+  @ApiPropertyOptional({
+    description: 'Medical conditions of the profile',
+    type: [String],
+  })
+  medical_conditions?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim()).filter((v) => v.length > 0);
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+          ? parsed.map((v) => String(v).trim()).filter((v) => v.length > 0)
+          : [];
+      } catch {
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+      }
+    }
+    return [];
+  })
+  @ApiPropertyOptional({
+    description: 'Allergies of the profile',
+    type: [String],
+  })
+  allergies?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim()).filter((v) => v.length > 0);
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+          ? parsed.map((v) => String(v).trim()).filter((v) => v.length > 0)
+          : [];
+      } catch {
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+      }
+    }
+    return [];
+  })
+  @ApiPropertyOptional({
+    description: 'Drug intakes of the profile',
+    type: [String],
+  })
+  drug_intakes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim()).filter((v) => v.length > 0);
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+          ? parsed.map((v) => String(v).trim()).filter((v) => v.length > 0)
+          : [];
+      } catch {
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+      }
+    }
+    return [];
+  })
+  @ApiPropertyOptional({
+    description: 'Treatment history of the profile',
+    type: [String],
+  })
+  treatment_history?: string[];
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Sex of the profile' })
+  sex?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'BMI of the profile (auto-calculated)' })
+  bmi?: number;
+
+  @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'CreatedAt timestamp' })
   createdAt?: string;

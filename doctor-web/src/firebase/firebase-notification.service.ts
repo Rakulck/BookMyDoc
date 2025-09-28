@@ -269,6 +269,9 @@ export class FirebaseNotificationService {
         return;
       }
 
+      // Final deduplication
+      tokens = [...new Set(tokens)];
+
       this.logger.log(
         `Sending notifications to tokens: ${JSON.stringify(tokens)}`,
         'FCM Tokens',

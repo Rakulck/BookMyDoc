@@ -16,11 +16,12 @@ const BookingCard = ({ booking }) => {
     action: '',
   });
 
-  const handleBooking = (status) => {
+  const handleBooking = (status, additionalData = {}) => {
     const payload = {
       id: booking?.booking_id,
       data: {
         status,
+        ...additionalData,
       },
     };
     updateBooking(payload);
@@ -107,6 +108,71 @@ const BookingCard = ({ booking }) => {
             className="text-right d-flex flex-column align-items-end gap-2"
           >
             <div className="d-flex gap-2">
+              {booking?.status === 'reschedule_pending' && (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmModal({
+                        open: true,
+                        title: 'Approve Reschedule Request',
+                        confirmButton: 'Yes, Approve',
+                        children: `Patient has requested to reschedule to ${new Date(
+                          booking?.reschedule_request?.requested_date
+                        ).toLocaleDateString()}. Do you want to approve this request?`,
+                        onConfirm: () => {
+                          handleBooking('approved', {
+                            approve_reschedule: true,
+                          });
+                          setConfirmModal({ open: false });
+                        },
+                      })
+                    }
+                  >
+                    {updateBookingResult?.isLoading &&
+                    confirmModal?.action === 'approve' ? (
+                      <Loading
+                        type="inline"
+                        size="small"
+                        text="Approving..."
+                      />
+                    ) : (
+                      'Approve Reschedule'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmModal({
+                        open: true,
+                        title: 'Reject Reschedule Request',
+                        confirmButton: 'Yes, Reject',
+                        children: 'Are you sure you want to reject this reschedule request?',
+                        onConfirm: () => {
+                          handleBooking('rejected', {
+                            reject_reschedule: true,
+                            rejection_reason: 'Not available at requested time',
+                          });
+                          setConfirmModal({ open: false });
+                        },
+                      })
+                    }
+                  >
+                    {updateBookingResult?.isLoading &&
+                    confirmModal?.action === 'reject' ? (
+                      <Loading
+                        type="inline"
+                        size="small"
+                        text="Rejecting..."
+                      />
+                    ) : (
+                      'Reject Reschedule'
+                    )}
+                  </Button>
+                </>
+              )}
               {['pending', 'confirmed'].includes(booking?.status) && (
                 <>
                   <Button

@@ -2,6 +2,7 @@ import { IBookingStatus } from '../type';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AvailabilitySlot } from '@app/availability/dto/availability.dto';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsNotEmpty,
@@ -111,6 +112,36 @@ export class BookingDto {
     example: '2024-09-02T12:00:00Z',
   })
   updated_at?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Reschedule request information when status is RESCHEDULE_PENDING',
+  })
+  reschedule_request?: {
+    requested_by: string;
+    requested_at: string;
+    requested_date: string;
+    requested_slot_id: string;
+    original_date: string;
+    original_slot_id: string;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Reschedule approval information',
+  })
+  reschedule_approved?: {
+    approved_by: string;
+    approved_at: string;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Reschedule rejection information',
+  })
+  reschedule_rejected?: {
+    rejected_by: string;
+    rejected_at: string;
+    rejection_reason: string;
+  };
 }
 
 export class BookingCreateDto {
@@ -213,4 +244,28 @@ export class BookingUpdateDto {
   @IsDateString()
   @IsOptional()
   updated_at?: string;
+
+  @ApiPropertyOptional({
+    description: 'Approve a reschedule request (doctor only)',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  approve_reschedule?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Reject a reschedule request (doctor only)',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  reject_reschedule?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Reason for rejecting reschedule request',
+    example: 'Not available at requested time',
+  })
+  @IsString()
+  @IsOptional()
+  rejection_reason?: string;
 }

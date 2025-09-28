@@ -6,6 +6,7 @@ import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 import { authLogout, fetchUserProfile } from '../../store/slices/auth.slice';
 import { NotificationsSlice } from '../../store/slices/notifications.slice';
+import { useUpdateBookingMutation } from '../../store/slices';
 import Loading from '../common/Loading';
 
 const TopBar = () => {
@@ -26,8 +27,44 @@ const TopBar = () => {
     );
   const [markAsRead] = NotificationsSlice.useMarkAsReadMutation();
   const [markAllAsRead] = NotificationsSlice.useMarkAllAsReadMutation();
+  const [updateBooking, { isLoading: isUpdatingBooking }] = useUpdateBookingMutation();
 
   const unreadCount = notifications?.filter((n) => !n.read)?.length || 0;
+
+  // Handle reschedule approval
+  const handleApproveReschedule = async (bookingId, e) => {
+    e.stopPropagation(); // Prevent notification click
+    try {
+      await updateBooking({
+        id: bookingId,
+        data: {
+          approve_reschedule: true,
+        },
+      }).unwrap();
+      // Refresh notifications
+      dispatch(NotificationsSlice.util.invalidateTags(['Notifications']));
+    } catch (error) {
+      console.error('Error approving reschedule:', error);
+    }
+  };
+
+  // Handle reschedule rejection
+  const handleRejectReschedule = async (bookingId, e) => {
+    e.stopPropagation(); // Prevent notification click
+    try {
+      await updateBooking({
+        id: bookingId,
+        data: {
+          reject_reschedule: true,
+          rejection_reason: 'Not available at requested time',
+        },
+      }).unwrap();
+      // Refresh notifications
+      dispatch(NotificationsSlice.util.invalidateTags(['Notifications']));
+    } catch (error) {
+      console.error('Error rejecting reschedule:', error);
+    }
+  };
 
   // Handle click outside to close notifications
   useEffect(() => {
@@ -209,6 +246,28 @@ const TopBar = () => {
                                   notification.title ||
                                   'Notification'}
                             </p>
+                            
+                            {/* Show approve/reject buttons for reschedule requests */}
+                            {notification.context?.booking_id && 
+                             notification.context?.actions?.includes('approve_reschedule') && (
+                              <div className="notification-actions">
+                                <button
+                                  className="notification-btn approve-btn"
+                                  onClick={(e) => handleApproveReschedule(notification.context.booking_id, e)}
+                                  disabled={isUpdatingBooking}
+                                >
+                                  {isUpdatingBooking ? 'Approving...' : 'Approve'}
+                                </button>
+                                <button
+                                  className="notification-btn reject-btn"
+                                  onClick={(e) => handleRejectReschedule(notification.context.booking_id, e)}
+                                  disabled={isUpdatingBooking}
+                                >
+                                  {isUpdatingBooking ? 'Rejecting...' : 'Reject'}
+                                </button>
+                              </div>
+                            )}
+                            
                             <span className="notification-time">
                               {new Date(
                                 notification.createdAt,
@@ -228,7 +287,15 @@ const TopBar = () => {
                     )}
                   </div>
                   <div className="notifications-footer">
-                    <button className="view-all">View All Notifications</button>
+                    <button 
+                      className="view-all"
+                      onClick={() => {
+                        navigate('/notifications');
+                        setShowNotifications(false);
+                      }}
+                    >
+                      View All Notifications
+                    </button>
                   </div>
                 </div>
               )}

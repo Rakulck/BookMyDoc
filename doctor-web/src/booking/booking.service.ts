@@ -523,7 +523,7 @@ export class BookingService {
       };
     }
 
-    // Validate slot availability for reschedule
+    // Handle reschedule requests with approval workflow
     if (payload?.date || payload?.slot_id) {
       // Get doctor's availability slots
       const doctorDoc = await fireStore
@@ -584,6 +584,72 @@ export class BookingService {
         updatePayload.slot = fireStore.doc(
           `${this.firebaseService.collections.availability_slots}/${payload.slot_id}`,
         );
+      }
+
+      // Determine if this is a reschedule request that needs approval
+      const isPatientRescheduling =
+        user?.role === 'customer' || user?.uid === bookingData.customer_id;
+      const isDoctorRescheduling =
+        user?.role === 'doctor' || user?.uid === bookingData.doctor_id;
+
+      if (isPatientRescheduling) {
+        // Patient is requesting reschedule - set to pending approval
+        updatePayload.status = IBookingStatus.RESCHEDULE_PENDING;
+        updatePayload.reschedule_request = {
+          requested_by: user?.uid,
+          requested_at: new Date().toISOString(),
+          requested_date: payload?.date || bookingData.date,
+          requested_slot_id: payload?.slot_id || bookingData.slot_id,
+          original_date: bookingData.date,
+          original_slot_id: bookingData.slot_id,
+        };
+
+        // Don't update the actual date/slot until doctor approves
+        delete updatePayload.date;
+        delete updatePayload.slot_id;
+        delete updatePayload.slot;
+      } else if (
+        isDoctorRescheduling &&
+        bookingData.status === IBookingStatus.RESCHEDULE_PENDING
+      ) {
+        // Doctor is responding to reschedule request
+        if (payload?.approve_reschedule === true) {
+          this.logger.log(
+            'RESCHEDULE APPROVED: Applying requested changes',
+            'Reschedule Decision',
+          );
+          // Doctor approved - apply the requested changes
+          updatePayload.status = IBookingStatus.CONFIRMED;
+          updatePayload.date = bookingData.reschedule_request?.requested_date;
+          updatePayload.slot_id =
+            bookingData.reschedule_request?.requested_slot_id;
+          updatePayload.reschedule_approved = {
+            approved_by: user?.uid,
+            approved_at: new Date().toISOString(),
+          };
+          this.logger.log(
+            `Approval details: ${JSON.stringify(updatePayload.reschedule_approved)}`,
+            'Reschedule Approved',
+          );
+          delete updatePayload.reschedule_request;
+        } else if (payload?.reject_reschedule === true) {
+          this.logger.log(
+            'RESCHEDULE REJECTED: Reverting to original appointment',
+            'Reschedule Decision',
+          );
+          // Doctor rejected - revert to confirmed with original details
+          updatePayload.status = IBookingStatus.CONFIRMED;
+          updatePayload.reschedule_rejected = {
+            rejected_by: user?.uid,
+            rejected_at: new Date().toISOString(),
+            rejection_reason: payload?.rejection_reason || 'No reason provided',
+          };
+          this.logger.log(
+            `Rejection details: ${JSON.stringify(updatePayload.reschedule_rejected)}`,
+            'Reschedule Rejected',
+          );
+          delete updatePayload.reschedule_request;
+        }
       }
     }
 
@@ -723,8 +789,35 @@ export class BookingService {
       createdAt: new Date().toISOString(),
     });
 
+    // Send FCM notification to primary receiver
+    try {
+      await this.firebaseNotification.sendNotificationByToken(
+        receiverId,
+        senderId,
+        () => notificationData,
+      );
+      this.logger.log(
+        `FCM notification sent to primary receiver ${receiverId}`,
+        'FCM Success',
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send FCM notification to primary receiver ${receiverId}: ${error instanceof Error ? error.message : String(error)}`,
+        'FCM Error',
+      );
+    }
+
     // Also send notification to the other party (if status changed)
-    if (bookingData?.status !== updatePayload.status) {
+    // But skip for reschedule pending requests to avoid duplicates
+    // Exception: Always notify patient when doctor approves/rejects reschedule
+    const isRescheduleDecision =
+      payload?.approve_reschedule === true ||
+      payload?.reject_reschedule === true;
+    if (
+      (bookingData?.status !== updatePayload.status &&
+        updatePayload.status !== IBookingStatus.RESCHEDULE_PENDING) ||
+      isRescheduleDecision
+    ) {
       const otherPartyId =
         user?.role === 'doctor'
           ? bookingData.customer_id
@@ -779,6 +872,24 @@ export class BookingService {
         },
         createdAt: new Date().toISOString(),
       });
+
+      // Send FCM notification to the other party
+      try {
+        await this.firebaseNotification.sendNotificationByToken(
+          otherPartyId,
+          senderId,
+          () => otherPartyNotificationData,
+        );
+        this.logger.log(
+          `FCM notification sent to ${otherPartyId} about booking update`,
+          'FCM Success',
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send FCM notification to ${otherPartyId}: ${error instanceof Error ? error.message : String(error)}`,
+          'FCM Error',
+        );
+      }
     }
 
     // Also create a confirmation notification for the sender (doctor/customer who made the change)
@@ -957,6 +1068,20 @@ export class BookingService {
     if (currentData?.status === IBookingStatus.COMPLETED) {
       actions = ['rate'];
     }
+    if (currentData?.status === IBookingStatus.RESCHEDULE_PENDING) {
+      // For doctor: show approve/reject actions
+      // For patient: show cancel action only
+      actions =
+        receiver?.role === 'doctor'
+          ? ['approve_reschedule', 'reject_reschedule']
+          : ['cancel'];
+    } else if (
+      currentData?.reschedule_approved ||
+      currentData?.reschedule_rejected
+    ) {
+      // For reschedule decisions, just show view action
+      actions = ['view_booking'];
+    }
 
     // Format date for display (e.g., "Aug 23, 2025")
     const formatDate = (dateStr) => {
@@ -974,8 +1099,30 @@ export class BookingService {
 
     let body = '';
 
-    // Check if it's a reschedule (date or slot changed) - only if oldData has actual data
-    if (
+    // Check if it's a reschedule PENDING first (this takes priority)
+    if (currentData?.status === IBookingStatus.RESCHEDULE_PENDING) {
+      if (receiver?.role === 'doctor') {
+        body = `${sender?.user_name} has requested to reschedule their appointment to ${formatDate(currentData?.reschedule_request?.requested_date)}. Please approve or reject this request.`;
+      } else {
+        body = `Your reschedule request for ${formatDate(currentData?.reschedule_request?.requested_date)} is pending doctor approval.`;
+      }
+    }
+    // Check for reschedule approval/rejection (new logic)
+    else if (currentData?.reschedule_approved) {
+      if (receiver?.role === 'customer') {
+        body = `Dr. ${sender?.user_name} approved your reschedule request. Your appointment is now confirmed for ${formatDate(currentData?.date)}.`;
+      } else {
+        body = `You approved the reschedule request for ${sender?.user_name}.`;
+      }
+    } else if (currentData?.reschedule_rejected) {
+      if (receiver?.role === 'customer') {
+        body = `Dr. ${sender?.user_name} rejected your reschedule request. Your original appointment time remains: ${formatDate(oldData?.date)}. Reason: ${currentData?.reschedule_rejected?.rejection_reason}`;
+      } else {
+        body = `You rejected the reschedule request for ${sender?.user_name}.`;
+      }
+    }
+    // Check if it's a regular reschedule (date or slot changed) - only if oldData has actual data and NOT pending
+    else if (
       oldData?.date &&
       oldData?.slot_id && // Only check if oldData has actual booking data
       (oldData?.date !== currentData.date ||
@@ -1015,6 +1162,13 @@ export class BookingService {
             body = `${sender?.user_name} cancelled their appointment for ${formatDate(currentData?.date)}`;
           }
           break;
+        case IBookingStatus.RESCHEDULE_PENDING:
+          if (receiver?.role === 'doctor') {
+            body = `${sender?.user_name} has requested to reschedule their appointment to ${formatDate(currentData?.reschedule_request?.requested_date)}. Please approve or reject this request.`;
+          } else {
+            body = `Your reschedule request for ${formatDate(currentData?.reschedule_request?.requested_date)} is pending doctor approval.`;
+          }
+          break;
         default:
           // For new bookings (no status change)
           if (receiver?.role === 'doctor') {
@@ -1040,7 +1194,14 @@ export class BookingService {
         doctor_id: currentData?.doctor_id,
         customer_id: currentData?.customer_id,
         service_name: currentData?.service?.name,
-        type: `booking_${currentData?.status.toLocaleLowerCase()}`,
+        type:
+          currentData?.status === IBookingStatus.RESCHEDULE_PENDING
+            ? 'reschedule_request'
+            : currentData?.reschedule_approved
+              ? 'reschedule_approved'
+              : currentData?.reschedule_rejected
+                ? 'reschedule_rejected'
+                : `booking_${currentData?.status.toLowerCase()}`,
         actions,
       },
     };

@@ -163,6 +163,15 @@ export class ProfileService {
         }
       }
 
+      // Auto-calculate BMI if height and weight are provided
+      if (profileDto.height && profileDto.weight) {
+        // BMI = weight(kg) / height(m)^2
+        const heightInMeters = profileDto.height / 100; // Convert cm to meters
+        updatedProfile.bmi = Number(
+          (profileDto.weight / (heightInMeters * heightInMeters)).toFixed(1),
+        );
+      }
+
       // Converted JavaScript Object to Plain Object for Firebase Firestore capable..
       const updatedProfilePlain = classToPlain(updatedProfile);
 

@@ -16,6 +16,7 @@ const Availability = React.lazy(
 );
 const Bookings = React.lazy(() => import('./components/bookings/Bookings'));
 const Service = React.lazy(() => import('./components/services/Service'));
+const NotificationsPage = React.lazy(() => import('./components/notifications/NotificationsPage'));
 
 function App() {
   return (
@@ -69,6 +70,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Service />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
                 </ProtectedRoute>
               }
             />
