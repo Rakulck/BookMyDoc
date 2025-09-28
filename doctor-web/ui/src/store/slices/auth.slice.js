@@ -265,6 +265,9 @@ export const authGoogleSignIn = createAsyncThunk(
             response?.data?.data?.idToken,
           );
           if (singInToken?.user) {
+            // Persist access token for subsequent API calls
+            const finalToken = await singInToken.user.getIdToken();
+            localStorage.setItem('accessToken', finalToken);
             return singInToken?.user;
           }
         }

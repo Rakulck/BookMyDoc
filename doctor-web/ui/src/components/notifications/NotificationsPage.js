@@ -21,36 +21,42 @@ const extractBookingId = (notification) => {
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [loadingNotifications, setLoadingNotifications] = useState(new Set());
-  
+
   // Get notifications data
   const { data: notifications, isLoading: notificationsLoading } =
     NotificationsSlice.useGetNotificationsQuery();
   const [markAsRead] = NotificationsSlice.useMarkAsReadMutation();
   const [markAllAsRead] = NotificationsSlice.useMarkAllAsReadMutation();
-  const [updateBooking, { isLoading: isUpdatingBooking }] = useUpdateBookingMutation();
+  const [updateBooking] = useUpdateBookingMutation();
 
   // Filter notifications
   const allNotifications = notifications || [];
-  const unreadNotifications = allNotifications.filter(n => !n.read);
-  
+  const unreadNotifications = allNotifications.filter((n) => !n.read);
+
   // Check for reschedule requests - look for multiple indicators
-  const rescheduleRequests = allNotifications.filter(n => {
+  const rescheduleRequests = allNotifications.filter((n) => {
     // Debug: Log notification structure
     console.log('Notification structure:', n);
-    
-    const notificationText = (typeof n.notification === 'string' 
-      ? n.notification 
-      : n.notification?.body || '').toLowerCase();
-    
+
+    const notificationText = (
+      typeof n.notification === 'string'
+        ? n.notification
+        : n.notification?.body || ''
+    ).toLowerCase();
+
     // Check if it's a reschedule request notification
-    const isReschedule = (
+    const isReschedule =
       n.context?.actions?.includes('approve_reschedule') ||
       notificationText.includes('reschedule') ||
       notificationText.includes('rescheduled') ||
-      n.type === 'reschedule_request'
+      n.type === 'reschedule_request';
+
+    console.log(
+      'Is reschedule notification:',
+      isReschedule,
+      'Text:',
+      notificationText,
     );
-    
-    console.log('Is reschedule notification:', isReschedule, 'Text:', notificationText);
     return isReschedule;
   });
 
@@ -70,22 +76,25 @@ const NotificationsPage = () => {
     console.log('🟢 APPROVE CLICKED:', { bookingId, notificationId });
     try {
       // Add to loading set
-      setLoadingNotifications(prev => new Set(prev).add(notificationId));
-      
-      console.log('🚀 Sending approve request:', { bookingId, data: { approve_reschedule: true } });
-      
+      setLoadingNotifications((prev) => new Set(prev).add(notificationId));
+
+      console.log('🚀 Sending approve request:', {
+        bookingId,
+        data: { approve_reschedule: true },
+      });
+
       const result = await updateBooking({
         id: bookingId,
         data: {
           approve_reschedule: true,
         },
       }).unwrap();
-      
+
       console.log('✅ Approve response:', result);
-      
+
       // Mark notification as read
       await markAsRead(notificationId);
-      
+
       // Show success message
       alert('Reschedule request approved successfully!');
     } catch (error) {
@@ -93,7 +102,7 @@ const NotificationsPage = () => {
       alert('Error approving reschedule request. Please try again.');
     } finally {
       // Remove from loading set
-      setLoadingNotifications(prev => {
+      setLoadingNotifications((prev) => {
         const newSet = new Set(prev);
         newSet.delete(notificationId);
         return newSet;
@@ -106,10 +115,16 @@ const NotificationsPage = () => {
     console.log('🔴 REJECT CLICKED:', { bookingId, notificationId });
     try {
       // Add to loading set
-      setLoadingNotifications(prev => new Set(prev).add(notificationId));
-      
-      console.log('🚀 Sending reject request:', { bookingId, data: { reject_reschedule: true, rejection_reason: 'Not available at requested time' } });
-      
+      setLoadingNotifications((prev) => new Set(prev).add(notificationId));
+
+      console.log('🚀 Sending reject request:', {
+        bookingId,
+        data: {
+          reject_reschedule: true,
+          rejection_reason: 'Not available at requested time',
+        },
+      });
+
       const result = await updateBooking({
         id: bookingId,
         data: {
@@ -117,12 +132,12 @@ const NotificationsPage = () => {
           rejection_reason: 'Not available at requested time',
         },
       }).unwrap();
-      
+
       console.log('✅ Reject response:', result);
-      
+
       // Mark notification as read
       await markAsRead(notificationId);
-      
+
       // Show success message
       alert('Reschedule request rejected successfully!');
     } catch (error) {
@@ -130,7 +145,7 @@ const NotificationsPage = () => {
       alert('Error rejecting reschedule request. Please try again.');
     } finally {
       // Remove from loading set
-      setLoadingNotifications(prev => {
+      setLoadingNotifications((prev) => {
         const newSet = new Set(prev);
         newSet.delete(notificationId);
         return newSet;
@@ -215,16 +230,16 @@ const NotificationsPage = () => {
             <Card.Body>
               <h5>No notifications found</h5>
               <p className="text-muted">
-                {activeTab === 'reschedule' 
+                {activeTab === 'reschedule'
                   ? 'No reschedule requests at the moment.'
-                  : 'You\'re all caught up!'}
+                  : "You're all caught up!"}
               </p>
             </Card.Body>
           </Card>
         ) : (
           getFilteredNotifications().map((notification) => (
-            <Card 
-              key={notification.id} 
+            <Card
+              key={notification.id}
               className={`notification-card ${!notification.read ? 'unread' : ''}`}
             >
               <Card.Body>
@@ -232,18 +247,22 @@ const NotificationsPage = () => {
                   <div className="notification-icon-large">
                     {getNotificationIcon(notification.type)}
                   </div>
-                  
+
                   <div className="notification-content-full">
                     <div className="notification-header">
                       <h6 className="notification-title">
                         {notification.notification?.title || 'Notification'}
-                        {!notification.read && <Badge bg="primary" className="ms-2">New</Badge>}
+                        {!notification.read && (
+                          <Badge bg="primary" className="ms-2">
+                            New
+                          </Badge>
+                        )}
                       </h6>
                       <span className="notification-time">
                         {formatDate(notification.createdAt)}
                       </span>
                     </div>
-                    
+
                     <p className="notification-text">
                       {typeof notification.notification === 'string'
                         ? notification.notification
@@ -254,20 +273,16 @@ const NotificationsPage = () => {
 
                     {/* Reschedule Request Actions */}
                     {(() => {
-                      const notificationText = (typeof notification.notification === 'string' 
-                        ? notification.notification 
-                        : notification.notification?.body || '').toLowerCase();
-                      
-                      const isRescheduleRequest = (
-                        notification.context?.actions?.includes('approve_reschedule') ||
-                        notification.type === 'reschedule_request'
-                      );
-                      
+                      const isRescheduleRequest =
+                        notification.context?.actions?.includes(
+                          'approve_reschedule',
+                        ) || notification.type === 'reschedule_request';
+
                       const bookingId = extractBookingId(notification);
-                      
+
                       // Don't show buttons if notification is already read (means it was processed)
                       const isPending = !notification.read;
-                      
+
                       // Show buttons only if it's a reschedule request, has booking ID, and is still pending
                       return isRescheduleRequest && bookingId && isPending;
                     })() && (
@@ -278,7 +293,7 @@ const NotificationsPage = () => {
                           Patient has requested to reschedule their appointment.
                           Please approve or reject this request.
                         </Alert>
-                        
+
                         <div className="action-buttons">
                           <Button
                             variant="success"
@@ -286,49 +301,66 @@ const NotificationsPage = () => {
                             onClick={() => {
                               const bookingId = extractBookingId(notification);
                               if (!bookingId) {
-                                alert('Error: Booking ID not found. Cannot process request.');
+                                alert(
+                                  'Error: Booking ID not found. Cannot process request.',
+                                );
                                 return;
                               }
                               // Approving reschedule
-                              handleApproveReschedule(bookingId, notification.id);
+                              handleApproveReschedule(
+                                bookingId,
+                                notification.id,
+                              );
                             }}
                             disabled={loadingNotifications.has(notification.id)}
                             className="me-2"
                           >
-                            {loadingNotifications.has(notification.id) ? 'Approving...' : '✓ Approve Reschedule'}
+                            {loadingNotifications.has(notification.id)
+                              ? 'Approving...'
+                              : '✓ Approve Reschedule'}
                           </Button>
-                          
+
                           <Button
                             variant="danger"
                             size="sm"
                             onClick={() => {
                               const bookingId = extractBookingId(notification);
                               if (!bookingId) {
-                                alert('Error: Booking ID not found. Cannot process request.');
+                                alert(
+                                  'Error: Booking ID not found. Cannot process request.',
+                                );
                                 return;
                               }
                               // Rejecting reschedule
-                              handleRejectReschedule(bookingId, notification.id);
+                              handleRejectReschedule(
+                                bookingId,
+                                notification.id,
+                              );
                             }}
                             disabled={loadingNotifications.has(notification.id)}
                           >
-                            {loadingNotifications.has(notification.id) ? 'Rejecting...' : '✗ Reject Reschedule'}
+                            {loadingNotifications.has(notification.id)
+                              ? 'Rejecting...'
+                              : '✗ Reject Reschedule'}
                           </Button>
                         </div>
                       </div>
                     )}
 
                     {/* Mark as Read Button */}
-                    {!notification.read && !notification.context?.actions?.includes('approve_reschedule') && (
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={() => markAsRead(notification.id)}
-                        className="mt-2"
-                      >
-                        Mark as Read
-                      </Button>
-                    )}
+                    {!notification.read &&
+                      !notification.context?.actions?.includes(
+                        'approve_reschedule',
+                      ) && (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => markAsRead(notification.id)}
+                          className="mt-2"
+                        >
+                          Mark as Read
+                        </Button>
+                      )}
                   </div>
                 </div>
               </Card.Body>

@@ -171,7 +171,7 @@ export const authGoogleSignIn = createAsyncThunk(
       }
       const userInfo = await GoogleSignin.signIn();
       const googleCredential = await GoogleAuthProvider.credential(
-        userInfo?.data?.idToken,
+        userInfo?.idToken,
       );
       // firebase
       const userCredential = await signInWithCredential(auth, googleCredential);
