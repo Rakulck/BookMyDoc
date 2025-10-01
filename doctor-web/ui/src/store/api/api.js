@@ -2,8 +2,25 @@ import axios from 'axios';
 
 const { NODE_ENV } = process.env;
 
-export const API_BASE_URL =
-  NODE_ENV === 'development' && 'http://localhost:3000/';
+// More robust API URL configuration
+export const API_BASE_URL = (() => {
+  if (NODE_ENV === 'development') {
+    return 'http://localhost:8080/';
+  }
+
+  // For production, try environment variable first, then fallback to relative URL for same-origin deployment
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // For same-origin deployment (like Vercel or Docker), use relative URL
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/`;
+  }
+
+  // Final fallback
+  return 'http://localhost:8080/';
+})();
 
 // export const API_BASE_PREFIX = '/elevenlabs/v1';
 const DEFAULT_TIMEOUT = 30_000;

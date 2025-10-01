@@ -14,14 +14,29 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn'],
   });
 
+  // Allow all origins in development, restrict in production
   app.enableCors({
-    // origin: ['http://localhost:3000', 'http://localhost:3001'],
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? [
+            'https://your-production-domain.com',
+            'https://your-vercel-domain.vercel.app',
+            'http://142.93.179.32:3030',
+          ]
+        : '*', // Allow all origins in development
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     preflightContinue: false,
     optionsSuccessStatus: 204,
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+    credentials: true,
   });
+
   app.setGlobalPrefix('api', { exclude: ['/health/(.*)', '/api-docs/(.*)'] });
   app.enableVersioning({
     type: VersioningType.URI,
@@ -37,11 +52,14 @@ async function bootstrap() {
     }),
   );
 
-  let swaggerApiServer = `http://localhost:${process.env.PUBLISH_PORT || process.env.PORT}`;
+  // Get the local IP for development
+  const localIP = process.env.LOCAL_IP || '192.168.1.7'; // You can make this dynamic if needed
+  const port = process.env.PORT || 8080;
 
-  if (process.env.NODE_ENV === 'production') {
-    swaggerApiServer = `http://142.93.179.32:3030`;
-  }
+  const swaggerApiServer =
+    process.env.NODE_ENV === 'production'
+      ? process.env.SWAGGER_SERVER || `http://142.93.179.32:3030`
+      : `http://${localIP}:${port}`;
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Doctor Appointment Booking')
@@ -78,14 +96,17 @@ async function bootstrap() {
   );
 
   const config = app.get(ConfigService);
-  await app.listen(
-    config.getOrThrow('PORT'),
-    config.getOrThrow('HOSTNAME'),
-    () => {
-      console.log(
-        `service listening on : ${config.getOrThrow('HOSTNAME')}:${config.getOrThrow('PORT')}}`,
-      );
-    },
-  );
+
+  // Log environment and configuration
+  console.log('🔧 [Server Config]:', {
+    NODE_ENV: process.env.NODE_ENV || 'not set',
+    PORT: config.getOrThrow('PORT'),
+    HOSTNAME: config.getOrThrow('HOSTNAME'),
+    CORS_ENABLED: true,
+    CORS_ORIGIN: process.env.NODE_ENV === 'production' ? 'restricted' : '*',
+  });
+
+  // Always bind to all interfaces (0.0.0.0)
+  await app.listen(port);
 }
 bootstrap();

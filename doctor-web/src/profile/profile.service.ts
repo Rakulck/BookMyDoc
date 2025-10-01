@@ -5,6 +5,18 @@ import { ProfileDto } from './dto/profile.dto';
 import { IApiResponse, IUnsafeObject } from '@common/types';
 import { classToPlain } from 'class-transformer';
 
+interface IMulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
+
 @Injectable()
 export class ProfileService {
   constructor(private readonly firebaseService: FirebaseService) {}
@@ -62,6 +74,7 @@ export class ProfileService {
       const profileDataWithServices = {
         ...profileData,
         services,
+        expertiseList: profileData.expertiseList || [],
       };
 
       return {
@@ -88,7 +101,7 @@ export class ProfileService {
   async updateProfile(
     userId: string,
     profileDto: ProfileDto,
-    file?: Express.Multer.File,
+    file?: IMulterFile,
   ): Promise<IApiResponse<IUnsafeObject>> {
     try {
       let photoUrl = profileDto?.photoUrl;
@@ -133,17 +146,12 @@ export class ProfileService {
         }
       }
 
-      // Ensure expertiseList and services are arrays
-      if (
-        profileDto.expertiseList &&
-        typeof profileDto.expertiseList === 'string'
-      ) {
-        try {
-          updatedProfile.expertiseList = JSON.parse(profileDto.expertiseList);
-        } catch (error) {
-          console.error('Error parsing expertiseList:', error);
-          throw new Error('Invalid expertiseList format');
-        }
+      // expertiseList is already handled by the DTO Transform decorator
+      if (profileDto.expertiseList) {
+        updatedProfile.expertiseList = Array.isArray(profileDto.expertiseList)
+          ? profileDto.expertiseList
+          : [];
+        console.log('Updated expertiseList:', updatedProfile.expertiseList);
       }
 
       if (profileDto.services && typeof profileDto.services === 'string') {
@@ -153,6 +161,15 @@ export class ProfileService {
           console.error('Error parsing services:', error);
           throw new Error('Invalid services format');
         }
+      }
+
+      // Auto-calculate BMI if height and weight are provided
+      if (profileDto.height && profileDto.weight) {
+        // BMI = weight(kg) / height(m)^2
+        const heightInMeters = profileDto.height / 100; // Convert cm to meters
+        updatedProfile.bmi = Number(
+          (profileDto.weight / (heightInMeters * heightInMeters)).toFixed(1),
+        );
       }
 
       // Converted JavaScript Object to Plain Object for Firebase Firestore capable..

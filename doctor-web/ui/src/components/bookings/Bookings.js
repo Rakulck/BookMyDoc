@@ -1,134 +1,148 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Nav, Tab, Card, Row, Col } from 'react-bootstrap';
+import { Container, Nav, Tab, Card } from 'react-bootstrap';
 import './Bookings.css';
 import { ToastContainer } from 'react-toastify';
 import BookingCard from './BookingCard';
-import Loader from './../common/Loader';
+import Loading from './../common/Loading';
 import { useGetBookingsQuery } from './../../store/slices';
 
 const Bookings = () => {
-  const [key, setKey] = useState('upcoming');
+  const [key, setKey] = useState('all');
   const [bookings, setBookings] = useState({
+    all: [],
     upcoming: [],
-    pending: [],
     completed: [],
     canceled: [],
+    rescheduleRequests: [],
   });
   const { data, isLoading, isFetching } = useGetBookingsQuery({});
 
   useEffect(() => {
     if (data) {
-      const upcoming = data.filter((item) => item?.status === 'confirmed');
-      const pending = data.filter((item) => item?.status === 'pending');
+      const upcoming = data.filter((item) => ['confirmed', 'reschedule_pending'].includes(item?.status));
       const completed = data.filter((item) => item?.status === 'completed');
       const canceled = data.filter((item) => item?.status === 'canceled');
+      const rescheduleRequests = data.filter((item) => item?.status === 'reschedule_pending');
       setBookings({
+        all: data,
         upcoming,
-        pending,
         completed,
         canceled,
+        rescheduleRequests,
       });
     }
   }, [data]);
 
+  const tabData = [
+    {
+      key: 'all',
+      label: 'All',
+      count: bookings?.all?.length || 0,
+      data: bookings?.all,
+    },
+    {
+      key: 'upcoming',
+      label: 'Upcoming',
+      count: bookings?.upcoming?.length || 0,
+      data: bookings?.upcoming,
+    },
+    {
+      key: 'past',
+      label: 'Completed',
+      count: bookings?.completed?.length || 0,
+      data: bookings?.completed,
+    },
+    {
+      key: 'canceled',
+      label: 'Canceled',
+      count: bookings?.canceled?.length || 0,
+      data: bookings?.canceled,
+    },
+    {
+      key: 'rescheduleRequests',
+      label: 'Reschedule Requests',
+      count: bookings?.rescheduleRequests?.length || 0,
+      data: bookings?.rescheduleRequests,
+    },
+  ];
+
   return (
-    <div id="booking">
-      <Container className="container mt-4 d-flex flex-column justify-content-center align-items-center">
+    <div id="booking" className="bookings-container">
+      <Container fluid className="bookings-wrapper">
         <ToastContainer />
-        <Loader loading={isLoading || isFetching} />
-        <Row className="justify-content-center" style={{ width: '100%' }}>
-          <Col xs={6}>
-            <h1 className="mb-4">Bookings</h1>
-            <p>
-              See upcoming and past events booked through your event type links.
-            </p>
-          </Col>
-        </Row>
-        <Row className="justify-content-center" style={{ width: '100%' }}>
-          <Col xs={8}>
-            <Tab.Container
-              id="bookings-tabs"
-              activeKey={key}
-              onSelect={(k) => setKey(k)}
-            >
-              <Nav variant="tabs" className="mb-3">
-                <Nav.Item>
-                  <Nav.Link eventKey="upcoming">
-                    Upcoming ({bookings?.upcoming?.length})
-                  </Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="unconfirmed">
-                    Unconfirmed ({bookings?.pending?.length})
-                  </Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="past">
-                    Past / Completed ({bookings?.completed?.length})
-                  </Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="canceled">
-                    Canceled ({bookings?.canceled?.length})
-                  </Nav.Link>
-                </Nav.Item>
+        {(isLoading || isFetching) && (
+          <Loading type="overlay" text="Loading Appointments..." />
+        )}
+
+        {/* Main Content */}
+        <div className="bookings-content">
+          <Tab.Container
+            id="bookings-tabs"
+            activeKey={key}
+            onSelect={(k) => setKey(k)}
+          >
+            {/* Navigation Tabs */}
+            <div className="tabs-wrapper">
+              <Nav variant="pills" className="bookings-nav">
+                {tabData.map((tab) => (
+                  <Nav.Item key={tab.key} className="nav-item-custom">
+                    <Nav.Link eventKey={tab.key} className="nav-link-custom">
+                      <div className="tab-content">
+                        <span className="tab-label">{tab.label}</span>
+                        <span className="tab-count">{tab.count}</span>
+                      </div>
+                    </Nav.Link>
+                  </Nav.Item>
+                ))}
               </Nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="tab-content-wrapper">
               <Tab.Content>
-                <Tab.Pane eventKey="upcoming">
-                  {bookings?.upcoming?.length > 0 ? (
-                    bookings?.upcoming.map((booking) => (
-                      <BookingCard key={booking.booking_id} booking={booking} />
-                    ))
-                  ) : (
-                    <NoBookingsMessage title="upcoming" />
-                  )}
-                </Tab.Pane>
-                <Tab.Pane eventKey="unconfirmed">
-                  {bookings?.pending?.length > 0 ? (
-                    bookings?.pending.map((booking) => (
-                      <BookingCard key={booking.booking_id} booking={booking} />
-                    ))
-                  ) : (
-                    <NoBookingsMessage title="unconfirmed" />
-                  )}
-                </Tab.Pane>
-                <Tab.Pane eventKey="past">
-                  {bookings?.completed?.length > 0 ? (
-                    bookings?.completed.map((booking) => (
-                      <BookingCard key={booking.booking_id} booking={booking} />
-                    ))
-                  ) : (
-                    <NoBookingsMessage title="completed" />
-                  )}
-                </Tab.Pane>
-                <Tab.Pane eventKey="canceled">
-                  {bookings?.canceled?.length > 0 ? (
-                    bookings?.canceled.map((booking) => (
-                      <BookingCard key={booking.booking_id} booking={booking} />
-                    ))
-                  ) : (
-                    <NoBookingsMessage title="canceled" />
-                  )}
-                </Tab.Pane>
+                {tabData.map((tab) => (
+                  <Tab.Pane key={tab.key} eventKey={tab.key}>
+                    <div className="bookings-section">
+                      {/* <div className="section-header">
+                        <h3 className="section-title">{tab.label}</h3>
+                      </div> */}
+                      <div className="bookings-grid">
+                        {tab.data && tab.data.length > 0 ? (
+                          tab.data.map((booking) => (
+                            <div
+                              key={booking.booking_id}
+                              className="booking-item"
+                            >
+                              <BookingCard booking={booking} />
+                            </div>
+                          ))
+                        ) : (
+                          <NoBookingsMessage title={tab.label.toLowerCase()} />
+                        )}
+                      </div>
+                    </div>
+                  </Tab.Pane>
+                ))}
               </Tab.Content>
-            </Tab.Container>
-          </Col>
-        </Row>
+            </div>
+          </Tab.Container>
+        </div>
       </Container>
     </div>
   );
 };
 
 const NoBookingsMessage = ({ title }) => (
-  <Card
-    className="text-center p-4"
-    style={{ minHeight: '300px', minWidth: '400px' }}
-  >
-    <Card.Body>
-      <Card.Title>No {title} bookings</Card.Title>
-      <Card.Text>
-        You have no {title} bookings. As soon as someone books a time with you
-        it will show up here.
+  <Card className="no-bookings-card">
+    <Card.Body className="no-bookings-body">
+      <div className="no-bookings-icon">📅</div>
+      <Card.Title className="no-bookings-title">
+        No appointments found
+      </Card.Title>
+      <Card.Text className="no-bookings-text">
+        {title === 'all'
+          ? 'Create your availability to start accepting bookings'
+          : 'New appointments will appear here'}
       </Card.Text>
     </Card.Body>
   </Card>

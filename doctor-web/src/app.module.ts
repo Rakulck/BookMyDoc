@@ -26,6 +26,7 @@ import { AvailabilityModule } from './availability/availability.module';
 import { BookingModule } from './booking/booking.module';
 import { ServiceModule } from './service/service.module';
 import { DoctorModule } from './doctor/doctor.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { DoctorModule } from './doctor/doctor.module';
     BookingModule,
     ServiceModule,
     DoctorModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
@@ -70,6 +72,6 @@ export class AppModule implements NestModule {
         { path: 'auth/register', method: RequestMethod.POST },
         { path: 'auth/verify-email', method: RequestMethod.POST },
       )
-      .forRoutes('*');
+      .forRoutes({ path: 'api/(.*)', method: RequestMethod.ALL });
   }
 }

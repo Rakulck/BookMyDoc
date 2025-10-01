@@ -11,9 +11,9 @@ services:
     restart: always
     command: npm run start:dev
     volumes:
-       - .:/app
+      - .:/app
     ports:
-      - "${PORT}:8080"
+      - '${PORT}:8080'
     env_file:
       - .env
     environment:
@@ -21,7 +21,7 @@ services:
       PORT: 8080
       PUBLISH_PORT: ${PORT}
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:8080/health/live"]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://0.0.0.0:8080/health/live']
       interval: 10s
       timeout: 10s
       retries: 3
@@ -40,15 +40,15 @@ services:
       doctor-app:
         condition: service_healthy
     volumes:
-       - .:/app
+      - .:/app
     ports:
-      - "3001:8080"
+      - '3001:8080'
     env_file:
       - .env
     environment:
       PORT: 8080
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080']
       interval: 10s
       timeout: 10s
       retries: 3

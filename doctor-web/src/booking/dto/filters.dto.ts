@@ -22,7 +22,7 @@ export class BookingFilterDto {
   @ApiPropertyOptional({
     description: 'The status of the booking',
     enum: IBookingStatus,
-    example: IBookingStatus.PENDING,
+    example: IBookingStatus.CONFIRMED,
   })
   @IsEnum(IBookingStatus)
   @IsOptional()

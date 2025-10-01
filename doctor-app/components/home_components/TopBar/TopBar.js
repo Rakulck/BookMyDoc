@@ -3,11 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
-import { authLogout, userSelector, profileSelector } from './../../../store';
+import { userSelector, profileSelector } from './../../../store';
 import Global_Styles from '../../../utils/Global_Styles';
 
 const TopBar = ({ navigation }) => {
-  const dispatch = useDispatch();
   const user = useSelector(userSelector);
   const profile = useSelector(profileSelector);
 
@@ -29,12 +28,12 @@ const TopBar = ({ navigation }) => {
       <View style={homeStyles.textContainer}>
         <TouchableOpacity>
           <Text style={homeStyles.welcome_container_Text1}>
-            {profile?.display_name || user?.displayName}
+            {profile?.user_name || user?.user_name}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => dispatch(authLogout())}>
+        {/* <TouchableOpacity onPress={() => dispatch(authLogout())}>
           <Text style={homeStyles.welcome_container_Text2}>Sign Out!</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <TouchableOpacity

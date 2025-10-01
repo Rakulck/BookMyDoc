@@ -1,12 +1,10 @@
 /**
  * @format
  */
-import {
-  APP_ENV,
-  ANDROID_WEB_CLIENT_ID,
-  IOS_WEB_CLIENT_ID,
-} from '@env';
-const __DEV__ = APP_ENV === 'development';
+import Constants from 'expo-constants';
+const { APP_ENV, ANDROID_WEB_CLIENT_ID, IOS_WEB_CLIENT_ID } =
+  Constants.expoConfig.extra || {};
+const __DEV__ = (APP_ENV || 'development') === 'development';
 import React, { StrictMode, useEffect } from 'react';
 import { Platform, StatusBar } from 'react-native';
 import 'react-native-devsettings';

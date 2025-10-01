@@ -21,7 +21,7 @@
     "paths": {
       "@app/*": ["src/*"],
       "@common/*": ["src/common/*"],
-      "@mock/*": ["test/mock/*"],
+      "@mock/*": ["test/mock/*"]
     },
     "resolveJsonModule": true,
     "esModuleInterop": true

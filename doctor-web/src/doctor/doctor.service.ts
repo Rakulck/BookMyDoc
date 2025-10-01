@@ -19,26 +19,52 @@ export class DoctorService {
     }
 
     // filter by name
+    if (filters?.name) {
+      const searchName = filters.name.trim().toLowerCase();
+      const displayName = (data?.display_name || '').toLowerCase();
+      const userName = (data?.user_name || '').toLowerCase();
+
+      // Remove dr/doctor prefix for comparison
+      const cleanSearchName = searchName
+        .replace(/^(dr\.?|doctor)\s*/i, '')
+        .trim();
+
+      if (
+        !displayName.includes(cleanSearchName) &&
+        !userName.includes(cleanSearchName)
+      ) {
+        return false;
+      }
+    }
+
+    // filter by gender
     if (
-      filters?.name &&
-      !(data?.display_name?.toLocaleLowerCase() || '').includes(
-        filters?.name?.trim()?.toLocaleLowerCase(),
-      )
+      filters?.gender &&
+      data?.gender?.toLowerCase() !== filters.gender.toLowerCase()
     ) {
       return false;
     }
 
-    // filter by skills
+    // filter by skills/expertise
     if (filters?.expertise && Array.isArray(data?.expertiseList)) {
-      const hasExpertise = data?.expertiseList?.some((ex: string) =>
-        (ex?.trim()?.toLocaleLowerCase() || '').includes(
-          filters?.expertise?.trim()?.toLocaleLowerCase(),
-        ),
-      );
+      const searchExpertise = filters.expertise.trim().toLowerCase();
+      const hasExpertise = data.expertiseList.some((ex) => {
+        const expertise = (ex || '').toLowerCase().trim();
+        return expertise.includes(searchExpertise);
+      });
       if (!hasExpertise) {
         return false;
       }
     }
+
+    // filter by rating
+    if (
+      filters?.minRating &&
+      (!data?.star_rating || data.star_rating < filters.minRating)
+    ) {
+      return false;
+    }
+
     return true;
   }
 
@@ -47,71 +73,104 @@ export class DoctorService {
       return true;
     }
 
-    // filter by name
+    const searchText = filters.search.trim().toLowerCase();
+    const displayName = (data?.display_name || '').toLowerCase();
+    const userName = (data?.user_name || '').toLowerCase();
+
+    // Clean up search text (remove dr/doctor prefix)
+    const cleanSearchText = searchText
+      .replace(/^(dr\.?|doctor)\s*/i, '')
+      .trim();
+
+    // Search in all name fields
     if (
-      filters?.search &&
-      (data?.display_name?.toLocaleLowerCase() || '').includes(
-        filters?.search?.trim()?.toLocaleLowerCase(),
-      )
+      displayName.includes(cleanSearchText) ||
+      userName.includes(cleanSearchText)
     ) {
       return true;
     }
 
-    // filter by skills
-    if (filters?.search && Array.isArray(data?.expertiseList)) {
-      const hasExpertise = data?.expertiseList?.some((ex: string) =>
-        (ex?.trim()?.toLocaleLowerCase() || '').includes(
-          filters?.search?.trim()?.toLocaleLowerCase(),
-        ),
-      );
+    // Search in expertise list with partial matching
+    if (Array.isArray(data?.expertiseList)) {
+      const hasExpertise = data.expertiseList.some((ex) => {
+        const expertise = (ex || '').toLowerCase().trim();
+        // Match start of words in expertise
+        return expertise
+          .split(/\s+/)
+          .some((word) => word.startsWith(cleanSearchText));
+      });
       if (hasExpertise) {
         return true;
       }
     }
+
+    // Search in specializations
+    if (Array.isArray(data?.specializations)) {
+      const hasSpecialization = data.specializations.some((spec) => {
+        const specialization = (spec || '').toLowerCase().trim();
+        return specialization.includes(cleanSearchText);
+      });
+      if (hasSpecialization) {
+        return true;
+      }
+    }
+
     return false;
   }
 
   async getDoctors(filters?: DoctorFilterDto, userRole: IRole = IRole.ADMIN) {
     const fireStore = this.firebaseService.getFireStore();
 
-    // get services
-    const serviceData = {} as any;
-    const serviceIds = [];
-    const services = await fireStore
-      .collection(this.firebaseService.collections.services)
-      .get();
-    services.docs.forEach((doc) => {
-      const data = doc?.data();
-      serviceData[data?.service_id] = data;
-      if (
-        (data?.name?.trim().toLocaleLowerCase() || '').includes(
-          filters?.service?.trim()?.toLocaleLowerCase(),
-        )
-      ) {
-        serviceIds.push(data?.service_id);
+    // First, if filtering by service name, get matching service IDs and their creators
+    const matchingDoctorIds = new Set();
+    if (filters?.service) {
+      const servicesSnapshot = await fireStore
+        .collection(this.firebaseService.collections.services)
+        .get();
+
+      servicesSnapshot.docs.forEach((doc) => {
+        const serviceData = doc.data();
+        if (
+          (serviceData?.name?.trim().toLowerCase() || '').includes(
+            filters.service.trim().toLowerCase(),
+          )
+        ) {
+          if (serviceData.createdBy) {
+            matchingDoctorIds.add(serviceData.createdBy);
+          }
+        }
+      });
+
+      // If no services match the filter, return empty array
+      if (matchingDoctorIds.size === 0) {
+        return [];
       }
-    });
+    }
 
     // get doctors
     let doctorRef: any = fireStore.collection(
       this.firebaseService.collections.profiles,
     );
     doctorRef = doctorRef.where('role', '==', IRole.DOCTOR);
-    if (filters?.service && serviceIds.length) {
-      doctorRef = doctorRef.where('services', 'array-contains-any', serviceIds);
-    }
 
     const doctorSnapshot = await doctorRef.get();
     const doctorResults = [];
-    doctorSnapshot.docs.forEach((doc: any) => {
+
+    // Use for...of instead of forEach to handle async operations
+    for (const doc of doctorSnapshot.docs) {
       const data = doc.data() as DoctorDto;
 
+      // If filtering by service, skip doctors who don't have matching services
+      if (filters?.service && !matchingDoctorIds.has(doc.id)) {
+        continue;
+      }
+
       if (!this.isFindFilterDoctor(data, filters)) {
-        return;
+        continue;
       }
 
       if (!this.isFindSearchDoctor(data, filters)) {
-        return;
+        continue;
       }
 
       // get availability
@@ -146,12 +205,22 @@ export class DoctorService {
         data.ratings = [data.star_rating];
       }
 
-      // get doctor services
-      if (Array.isArray(data?.services) && data?.services.length) {
-        data.providingServices = data?.services.map(
-          (serviceId) => serviceData[serviceId] ?? undefined,
-        );
-      }
+      // Get services created by this doctor
+      const servicesSnapshot = await fireStore
+        .collection(this.firebaseService.collections.services)
+        .where('createdBy', '==', doc.id)
+        .get();
+
+      data.providingServices = servicesSnapshot.docs.map((serviceDoc) => {
+        const serviceData = serviceDoc.data();
+        return {
+          service_id: serviceData.service_id || serviceDoc.id,
+          name: serviceData.name || '',
+          description: serviceData.description || '',
+          type: serviceData.type || '',
+          price: serviceData.price || 0,
+        };
+      });
 
       if (userRole !== IRole.ADMIN) {
         delete data?.email;
@@ -159,26 +228,37 @@ export class DoctorService {
         delete data?.notification_tokens;
       }
       doctorResults.push(data);
-    });
+    }
+
+    // Sort results by relevance if there's a search query
+    if (filters?.search) {
+      const searchText = filters.search.trim().toLowerCase();
+      doctorResults.sort((a, b) => {
+        const aName = (a?.display_name || '').toLowerCase();
+        const bName = (b?.display_name || '').toLowerCase();
+
+        // Exact matches first
+        if (aName === searchText && bName !== searchText) return -1;
+        if (bName === searchText && aName !== searchText) return 1;
+
+        // Then starts with
+        if (aName.startsWith(searchText) && !bName.startsWith(searchText))
+          return -1;
+        if (bName.startsWith(searchText) && !aName.startsWith(searchText))
+          return 1;
+
+        // Then contains
+        if (aName.includes(searchText) && !bName.includes(searchText))
+          return -1;
+        if (bName.includes(searchText) && !aName.includes(searchText)) return 1;
+
+        // Alphabetical order for equal relevance
+        return aName.localeCompare(bName);
+      });
+    }
 
     if (filters?.limit) {
-      // generate random data by shuffle
-      let randomLimit =
-        doctorResults.length < +filters?.limit
-          ? +doctorResults.length
-          : +filters?.limit;
-      const doctorData = [];
-      const checked = [];
-
-      while (randomLimit > 0) {
-        const randomIndex = Math.round(Math.random() * doctorResults.length);
-        if (!checked.includes(randomIndex) && doctorResults[randomIndex]) {
-          doctorData.push(doctorResults[randomIndex]);
-          checked.push(randomIndex);
-          --randomLimit;
-        }
-      }
-      return doctorData;
+      return doctorResults.slice(0, +filters.limit);
     }
 
     return doctorResults;
@@ -198,18 +278,42 @@ export class DoctorService {
       throw new HttpException('invalid doctor', HttpStatus.BAD_REQUEST);
     }
 
-    // get services data
-    if (doctorData?.services?.length) {
-      const servicesRef = await fireStore
-        .collection(this.firebaseService.collections.services)
-        .where('service_id', 'in', doctorData.services)
-        .get();
-      doctorData.providingServices = servicesRef?.docs?.map(
-        (doc: any) => doc?.data() as ServiceDto,
-      );
-    } else {
+    // Get services created by this doctor
+    console.log('Fetching services for doctor:', doctorId);
+
+    const servicesSnapshot = await fireStore
+      .collection(this.firebaseService.collections.services)
+      .where('createdBy', '==', doctorId)
+      .get();
+
+    if (servicesSnapshot.empty) {
+      console.log('No services found for doctor:', doctorId);
       doctorData.providingServices = [];
+    } else {
+      doctorData.providingServices = servicesSnapshot.docs.map((doc) => {
+        const serviceData = doc.data();
+        const service: ServiceDto = {
+          service_id: serviceData.service_id || doc.id,
+          name: serviceData.name || '',
+          description: serviceData.description || '',
+          type: serviceData.type || '',
+          price: serviceData.price || 0,
+        };
+        return service;
+      });
+
+      console.log('Services found for doctor:', {
+        doctorId,
+        serviceCount: doctorData.providingServices.length,
+        services: doctorData.providingServices.map((s) => ({
+          service_id: s.service_id,
+          name: s.name,
+          price: s.price,
+        })),
+      });
     }
+
+    // We don't need services array anymore since we query by createdBy
 
     // get availability data
     const availabilityDays = {};

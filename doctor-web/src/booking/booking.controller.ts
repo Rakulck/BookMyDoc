@@ -123,14 +123,36 @@ export class BookingController {
     description: 'Create payment error response.',
   })
   async createBookingPayment(@Req() req: any, @Body() body: CreatePaymentDto) {
-    if (req.user.role !== IRole.ADMIN) {
-      body.customer_id = req.user.uid;
-    }
+    try {
+      console.log('Payment request received:', {
+        user: req.user,
+        originalBody: body,
+        userRole: req.user?.role,
+        userUid: req.user?.uid,
+      });
 
-    if (!body?.customer_id) {
-      throw new HttpException('Customer id require!', HttpStatus.BAD_REQUEST);
+      if (req.user.role !== IRole.ADMIN) {
+        body.customer_id = req.user.uid;
+      }
+
+      console.log('Payment body after processing:', {
+        body,
+        hasCustomerId: !!body?.customer_id,
+        hasDoctorId: !!body?.doctor_id,
+        hasServiceId: !!body?.service_id,
+      });
+
+      if (!body?.customer_id) {
+        throw new HttpException('Customer id require!', HttpStatus.BAD_REQUEST);
+      }
+
+      const result = await this.bookingService.createBookingPayment(body);
+      console.log('Payment creation successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Payment creation error:', error);
+      throw error;
     }
-    return await this.bookingService.createBookingPayment(body);
   }
 
   @Post('/')

@@ -3,4 +3,4 @@ export const APP_URL =
     ? `http://localhost:${process.env.REACT_APP_PORT}`
     : '';
 
-export const CURRENCY_SYMBOL = '$';
+export const CURRENCY_SYMBOL = '₹';

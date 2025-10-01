@@ -4,6 +4,31 @@ import { IsBoolean, IsDecimal, IsOptional, IsString } from 'class-validator';
 
 export class DoctorFilterDto {
   @ApiPropertyOptional({
+    description: 'Filter by doctor gender',
+    example: 'male',
+    enum: ['male', 'female', 'other'],
+  })
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by location/area',
+    example: 'New York',
+  })
+  @IsString()
+  @IsOptional()
+  location?: string;
+
+  @ApiPropertyOptional({
+    description: 'Minimum rating filter (1-5)',
+    example: 4,
+  })
+  @Transform(({ value }) => parseFloat(value))
+  @IsDecimal()
+  @IsOptional()
+  minRating?: number;
+  @ApiPropertyOptional({
     description: 'Search By doctor name or expertise',
     example: 'doctor x',
   })
@@ -40,7 +65,7 @@ export class DoctorFilterDto {
     example: 10,
   })
   @IsBoolean()
-  @Transform(({ value }) => ['true', 'false'].includes(value))
+  @Transform(({ value }) => value === 'true')
   @IsOptional()
   availability?: boolean;
 
@@ -48,7 +73,7 @@ export class DoctorFilterDto {
     description: 'The limit of the doctor',
     example: 10,
   })
-  @IsDecimal()
+  @Transform(({ value }) => parseInt(value))
   @IsOptional()
   limit?: number;
 }

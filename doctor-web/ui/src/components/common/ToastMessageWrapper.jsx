@@ -1,12 +1,7 @@
 import { toast } from 'react-toastify';
 import './common.css';
 
-export const ToastMessageWrapper = ({
-  type,
-  title,
-  message,
-  className,
-}) => {
+export const ToastMessageWrapper = ({ type, title, message, className }) => {
   let titleClass = 'text-md';
   let messageTextClass = 'text-sm';
 
@@ -37,12 +32,7 @@ export const ToastMessageWrapper = ({
   );
 };
 
-export const ToastSuccessMessage = ({
-  title,
-  message,
-  options,
-  redirect,
-}) => {
+export const ToastSuccessMessage = ({ title, message, options, redirect }) => {
   toast.success(
     <ToastMessageWrapper
       type="success"
@@ -54,12 +44,7 @@ export const ToastSuccessMessage = ({
   );
 };
 
-export const ToastErrorMessage = ({
-  title,
-  message,
-  options,
-  redirect,
-}) => {
+export const ToastErrorMessage = ({ title, message, options, redirect }) => {
   toast.error(
     <ToastMessageWrapper
       type="error"
@@ -71,12 +56,7 @@ export const ToastErrorMessage = ({
   );
 };
 
-export const ToastWarningMessage = ({
-  title,
-  message,
-  options,
-  redirect,
-}) => {
+export const ToastWarningMessage = ({ title, message, options, redirect }) => {
   toast.warning(
     <ToastMessageWrapper
       type="warning"
@@ -88,13 +68,7 @@ export const ToastWarningMessage = ({
   );
 };
 
-export const ToastMessage = ({
-  type,
-  title,
-  message,
-  options,
-  redirect,
-}) => {
+export const ToastMessage = ({ type, title, message, options, redirect }) => {
   switch (type) {
     case 'success':
       ToastSuccessMessage({ title, message, options, redirect });

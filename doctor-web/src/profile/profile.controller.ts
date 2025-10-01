@@ -10,6 +10,18 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
+
+interface IMulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
 import { ProfileDto } from './dto/profile.dto';
 import { RolesGuard } from '../auth/guard/roles.guard';
 import { IApiResponse, IUnsafeObject } from '@common/types';
@@ -61,6 +73,10 @@ export class ProfileController {
           type: 'string',
           nullable: true,
         },
+        hospital_name: {
+          type: 'string',
+          nullable: true,
+        },
         expertiseList: {
           type: 'array',
           items: { type: 'string' },
@@ -86,7 +102,7 @@ export class ProfileController {
   async updateProfile(
     @Req() req: any,
     @Body() profileDto: ProfileDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file?: IMulterFile,
   ): Promise<IApiResponse<IUnsafeObject>> {
     const userId = req.user.uid;
     return this.profileService.updateProfile(userId, profileDto, file);

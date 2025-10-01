@@ -5,12 +5,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import loginBackground from '../../assets/images/doc_image.jpg';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faApple } from '@fortawesome/free-brands-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { authLogin, authGoogleSignIn } from '../../store/slices/auth.slice';
-import { ScaleLoader } from 'react-spinners';
+import Loading from '../common/Loading';
 import { ToastErrorMessage } from './../common/ToastMessageWrapper';
+import GoogleLogo from '../common/GoogleLogo';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -38,10 +37,23 @@ const Login = () => {
   // REDUX ACTIONS EFFECTS WITH LOGIN USER..
   useEffect(() => {
     if (!isAuthenticated && !loading && error?.message) {
-      ToastErrorMessage({
-        title: error?.message,
-        message: error?.error?.message,
-      });
+      // Handle role mismatch error specifically
+      if (
+        error?.error?.message?.includes(
+          'Account Already Exists with Different Role',
+        )
+      ) {
+        ToastErrorMessage({
+          title: '⚠️ Account Role Mismatch',
+          message: `${error.message}. ${error.suggestion || 'Please contact support to change your role.'}`,
+          duration: 6000,
+        });
+      } else {
+        ToastErrorMessage({
+          title: error?.message,
+          message: error?.error?.message,
+        });
+      }
     }
 
     if (isAuthenticated && (!loading || !providerLoading) && !error) {
@@ -186,26 +198,12 @@ const Login = () => {
                     {!loading ? 'Login' : 'Loading...'}
                   </button>
                 ) : (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '100%',
-                      width: '100%',
-                    }}
-                  >
-                    <ScaleLoader
-                      size={150}
-                      color={'#18A0FB'}
-                      loading={loading}
-                    />
-                  </div>
+                  <Loading type="inline" size="default" />
                 )}
               </form>
               <div className="signup-option mt-3">
                 <span>
-                  Don't have an account? <Link to="/Signup">Signup</Link>
+                  Don't have an account?? <Link to="/Signup">Signup</Link>
                 </span>
               </div>
 
@@ -215,28 +213,15 @@ const Login = () => {
                     className="btn btn-light mr-2"
                     onClick={handleGoogleSignIn}
                   >
-                    <FontAwesomeIcon icon={faGoogle} />
-                  </button>
-                  <button className="btn btn-light">
-                    <FontAwesomeIcon icon={faApple} />
+                    <GoogleLogo width={20} height={20} />
                   </button>
                 </div>
               ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                    width: '100%',
-                  }}
-                >
-                  <ScaleLoader
-                    size={50}
-                    color={'#18A0FB'}
-                    loading={providerLoading}
-                  />
-                </div>
+                <Loading
+                  type="inline"
+                  size="small"
+                  text="Connecting to Google..."
+                />
               )}
             </div>
           </div>

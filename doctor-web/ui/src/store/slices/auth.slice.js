@@ -51,10 +51,22 @@ export const authRegister = createAsyncThunk(
         data: payload,
       });
 
+      // Handle conflict errors (409) - Email already exists
       if (response?.data?.statusCode === 409) {
-        return response?.data?.data;
+        return rejectWithValue({
+          statusCode: 409,
+          message: response?.data?.message || 'Registration failed',
+          error: {
+            message:
+              response?.data?.error?.message ||
+              response?.data?.message ||
+              'Email already exists',
+          },
+          data: response?.data?.data,
+        });
       }
 
+      // Handle success (201)
       if (response?.data?.statusCode === 201) {
         if (response?.data?.data?.idToken) {
           const singInToken = await signInWithCustomToken(
@@ -70,17 +82,50 @@ export const authRegister = createAsyncThunk(
           }
         }
       }
-    } catch (error) {
-      if (error?.data || error?.statusCode) {
-        return rejectWithValue(error);
-      } else {
+
+      // Handle other non-success status codes
+      if (response?.data?.statusCode && response?.data?.statusCode !== 201) {
         return rejectWithValue({
-          error: error,
-          message: error?.message,
-          data: null,
-          statusCode: error?.code || 500,
+          statusCode: response?.data?.statusCode,
+          message: response?.data?.message || 'Registration failed',
+          error: {
+            message:
+              response?.data?.error?.message ||
+              response?.data?.message ||
+              'Registration failed',
+          },
+          data: response?.data?.data,
         });
       }
+    } catch (error) {
+      console.log('🚨 [FRONTEND] Registration error:', error);
+
+      // Handle HTTP error responses
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        return rejectWithValue({
+          statusCode: errorData?.statusCode || error?.response?.status || 500,
+          message: errorData?.message || 'Registration failed',
+          error: {
+            message:
+              errorData?.error?.message ||
+              errorData?.message ||
+              error?.message ||
+              'Registration failed',
+          },
+          data: errorData?.data,
+        });
+      }
+
+      // Handle network or other errors
+      return rejectWithValue({
+        statusCode: error?.code || 500,
+        message: error?.message || 'Network error occurred',
+        error: {
+          message: error?.message || 'Network error occurred',
+        },
+        data: null,
+      });
     }
   },
 );
@@ -91,15 +136,34 @@ export const authRegister = createAsyncThunk(
 export const authLogin = createAsyncThunk(
   'auth/login',
   async (payload, { rejectWithValue }) => {
+    console.log('🔐 [FRONTEND] Email/Password login started');
+    console.log('📋 [FRONTEND] Login payload:', {
+      email: payload?.email,
+      hasPassword: !!payload?.password,
+      role: payload?.role,
+    });
+
     try {
+      console.log('🔍 [FRONTEND] Authenticating with Firebase...');
       const userCredential = await signInWithEmailAndPassword(
         auth,
         payload?.email,
         payload?.password,
       );
+
+      console.log('✅ [FRONTEND] Firebase authentication successful:', {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        emailVerified: userCredential.user.emailVerified,
+      });
+
       const idToken = await userCredential.user.getIdToken();
+      console.log('🎫 [FRONTEND] ID token obtained:', {
+        tokenLength: idToken?.length,
+      });
 
       if (!userCredential?.user?.emailVerified) {
+        console.log('❌ [FRONTEND] Email not verified');
         return rejectWithValue({
           statusCode: 403,
           message: 'Your email is not verified.',
@@ -109,6 +173,7 @@ export const authLogin = createAsyncThunk(
         });
       }
 
+      console.log('📤 [FRONTEND] Sending login request to backend...');
       const response = await apiClient.request({
         method: 'post',
         url: 'api/auth/login',
@@ -118,18 +183,47 @@ export const authLogin = createAsyncThunk(
         },
       });
 
+      console.log('📋 [FRONTEND] Backend login response:', {
+        statusCode: response?.data?.statusCode,
+        hasIdToken: !!response?.data?.data?.idToken,
+        message: response?.data?.message,
+      });
+
       if (response?.data?.statusCode === 200) {
         if (response?.data?.data?.idToken) {
+          console.log(
+            '🎫 [FRONTEND] Signing in with custom token from backend...',
+          );
           const singInToken = await signInWithCustomToken(
             auth,
             response?.data?.data?.idToken,
           );
+
+          console.log('✅ [FRONTEND] Custom token sign-in successful:', {
+            hasUser: !!singInToken?.user,
+            uid: singInToken?.user?.uid,
+            email: singInToken?.user?.email,
+          });
+
           if (singInToken?.user) {
+            // Store the access token for future API calls
+            const finalToken = await singInToken.user.getIdToken();
+            localStorage.setItem('accessToken', finalToken);
+            console.log('💾 [FRONTEND] Access token stored in localStorage');
             return singInToken?.user;
           }
         }
       }
+
+      console.log('❌ [FRONTEND] Login failed or incomplete');
     } catch (error) {
+      console.log('💥 [FRONTEND] Login error:', {
+        message: error?.message,
+        code: error?.code,
+        statusCode: error?.statusCode,
+        data: error?.data,
+      });
+
       if (error?.data || error?.statusCode) {
         return rejectWithValue(error);
       } else {
@@ -171,6 +265,9 @@ export const authGoogleSignIn = createAsyncThunk(
             response?.data?.data?.idToken,
           );
           if (singInToken?.user) {
+            // Persist access token for subsequent API calls
+            const finalToken = await singInToken.user.getIdToken();
+            localStorage.setItem('accessToken', finalToken);
             return singInToken?.user;
           }
         }
@@ -293,14 +390,27 @@ export const sendVerifyEmail = createAsyncThunk(
 export const verifyEmail = createAsyncThunk(
   'user/verifyEmail',
   async (stateCode, { rejectWithValue }) => {
+    console.log('📧 [FRONTEND] Email verification started');
+    console.log('🔍 [FRONTEND] State code:', {
+      hasStateCode: !!stateCode,
+      length: stateCode?.length,
+    });
+
     try {
+      console.log('📤 [FRONTEND] Sending verification request to backend...');
       const response = await apiClient.request({
         method: 'post',
         url: 'api/auth/verify-email',
         data: { state_code: stateCode },
       });
 
+      console.log('✅ [FRONTEND] Verification response received:', {
+        statusCode: response?.data?.statusCode,
+        message: response?.data?.message,
+      });
+
       if (response?.data?.statusCode === 200) {
+        console.log('🔑 [FRONTEND] Email verified, attempting auto-login...');
         const loginResponse = await apiClient.request({
           method: 'post',
           url: 'api/auth/login',
@@ -310,22 +420,51 @@ export const verifyEmail = createAsyncThunk(
           },
         });
 
+        console.log('📋 [FRONTEND] Login response received:', {
+          statusCode: loginResponse?.data?.statusCode,
+          hasIdToken: !!loginResponse?.data?.data?.idToken,
+          message: loginResponse?.data?.message,
+        });
+
         if (
           loginResponse?.data?.statusCode === 200 &&
           loginResponse?.data?.data?.idToken
         ) {
+          console.log('🎫 [FRONTEND] Signing in with custom token...');
           const singInToken = await signInWithCustomToken(
             auth,
             loginResponse?.data?.data?.idToken,
           );
+
+          console.log('✅ [FRONTEND] Custom token sign-in successful:', {
+            hasUser: !!singInToken?.user,
+            uid: singInToken?.user?.uid,
+            email: singInToken?.user?.email,
+          });
+
           if (singInToken?.user) {
+            // Store the access token for future API calls
+            if (loginResponse?.data?.data?.idToken) {
+              localStorage.setItem(
+                'accessToken',
+                await singInToken.user.getIdToken(),
+              );
+              console.log('💾 [FRONTEND] Access token stored in localStorage');
+            }
             return singInToken?.user;
           }
         }
       }
 
+      console.log('❌ [FRONTEND] Email verification failed or incomplete');
       return response?.data;
     } catch (error) {
+      console.log('💥 [FRONTEND] Email verification error:', {
+        message: error?.message,
+        statusCode: error?.statusCode,
+        data: error?.data,
+      });
+
       if (error?.data || error?.statusCode) {
         return rejectWithValue(error);
       } else {
@@ -627,8 +766,19 @@ const AuthSlice = createSlice({
         state.isAuthenticated = false;
         state.providerLoading = false;
 
-        if (action?.type === 'auth/google-signin/rejected') {
-          state.error = action.payload;
+        const serverErrorObj = action?.payload;
+
+        // Handle role mismatch error specifically
+        if (serverErrorObj?.error?.type === 'ROLE_MISMATCH') {
+          state.error = {
+            ...serverErrorObj,
+            error: {
+              message: `Account Already Exists with Different Role`,
+              details: serverErrorObj.message,
+            },
+            message: `This email is registered as a ${serverErrorObj.data?.existingRole}`,
+            suggestion: serverErrorObj.data?.suggestion,
+          };
         } else {
           state.error = action.payload;
         }
@@ -719,7 +869,9 @@ const AuthSlice = createSlice({
         state.user = {
           ...placeholderData,
           ...actionData,
-          services: [...placeholderData?.services],
+          services: actionData?.services || placeholderData?.services || [],
+          expertiseList:
+            actionData?.expertiseList || placeholderData?.expertiseList || [],
         };
         state.error = null;
       })

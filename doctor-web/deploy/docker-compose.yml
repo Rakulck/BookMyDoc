@@ -1,6 +1,6 @@
 version: '3.8'
 
-services: 
+services:
   doctor-app:
     image: deploy-doctor-app:latest
     restart: always
@@ -20,7 +20,7 @@ services:
           cpus: '0.5'
           memory: '256M'
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:8080/health/live"]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://0.0.0.0:8080/health/live']
       interval: 10s
       timeout: 10s
       retries: 3

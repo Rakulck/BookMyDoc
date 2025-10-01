@@ -1,8 +1,8 @@
 export enum IBookingStatus {
-  PENDING = 'pending',
   CONFIRMED = 'confirmed',
   CANCELED = 'canceled',
   COMPLETED = 'completed',
+  RESCHEDULE_PENDING = 'reschedule_pending',
 }
 
 export enum IPaymentStatus {
