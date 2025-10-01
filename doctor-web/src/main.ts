@@ -107,16 +107,6 @@ async function bootstrap() {
   });
 
   // Always bind to all interfaces (0.0.0.0)
-  await app.listen(port, '0.0.0.0', () => {
-    console.log('✨ [Server Status]:', {
-      localUrl: `http://localhost:${port}`,
-      networkUrl: `http://${localIP}:${port}`,
-      apiDocs: {
-        local: `http://localhost:${port}/api-docs`,
-        network: `http://${localIP}:${port}/api-docs`,
-      },
-      mode: process.env.NODE_ENV || 'development',
-    });
-  });
+  await app.listen(port);
 }
 bootstrap();
